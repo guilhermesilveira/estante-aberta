@@ -3,10 +3,10 @@
 import { useState } from 'react';
 import { ArrowLeft, BookCheck, Check, Gift, Handshake, LoaderCircle, Send, ShoppingBag, X } from 'lucide-react';
 import Image from 'next/image';
-import Link from 'next/link';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { HardLink } from '@/components/hard-link';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { Book, Shelf } from '@/db/repository';
@@ -126,10 +126,10 @@ export function PublicShelf({ books, shelf }: { books: Book[]; shelf: Shelf }) {
         <div className="absolute -right-16 -top-28 size-72 rounded-full bg-[#f0be46]/25 blur-2xl" />
         <div className="absolute -bottom-40 -left-20 size-80 rounded-full bg-[#ef6d4e]/25 blur-3xl" />
         <div className="relative mx-auto max-w-5xl">
-          <Link className="inline-flex items-center gap-2 text-sm font-semibold text-white/70 hover:text-white" href="/">
+          <HardLink className="inline-flex items-center gap-2 text-sm font-semibold text-white/70 hover:text-white" href="/">
             <span className="grid size-8 place-items-center rounded-xl bg-white/10"><ShoppingBag className="size-4" /></span>
             Estante Aberta
-          </Link>
+          </HardLink>
           <div className="mt-10 max-w-3xl">
             <p className="text-xs font-bold uppercase tracking-[0.15em] text-[#f0be46]">{shelf.ownerName} está compartilhando</p>
             <h1 className="mt-3 font-heading text-[clamp(2.8rem,9vw,5.4rem)] font-bold leading-[0.95] tracking-[-0.07em]">{shelf.name}</h1>
