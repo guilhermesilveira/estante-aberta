@@ -2,7 +2,8 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 
 import { PublicShelf } from '@/components/public-shelf';
-import { getPublicShelf, getRuntimeEnv } from '@/db/repository';
+import { getPublicShelf } from '@/db/repository';
+import { SITE_ORIGIN } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
 
@@ -18,8 +19,7 @@ export async function generateMetadata({
   const title = `${data.shelf.name} — Estante Aberta`;
   const description = `${data.books.length} livros disponíveis para doar ou emprestar. Escolha até 8.`;
   const firstPhoto = data.books.find((book) => book.photoBatchId)?.photoBatchId;
-  const siteOrigin = getRuntimeEnv().PUBLIC_SITE_URL || 'http://localhost:3000';
-  const images = firstPhoto ? [new URL(`/api/photos/${firstPhoto}`, siteOrigin).toString()] : [];
+  const images = firstPhoto ? [new URL(`/api/photos/${firstPhoto}`, SITE_ORIGIN).toString()] : [];
 
   return {
     title,

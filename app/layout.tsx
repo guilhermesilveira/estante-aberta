@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import { DM_Sans, Fraunces } from 'next/font/google';
 
 import './globals.css';
+import { SITE_ORIGIN } from '@/lib/site';
 
 const bodyFont = DM_Sans({
   variable: '--font-body',
@@ -14,7 +15,7 @@ const headingFont = Fraunces({
 });
 
 export const metadata: Metadata = {
-  metadataBase: new URL(process.env.PUBLIC_SITE_URL ?? 'http://localhost:3000'),
+  metadataBase: new URL(SITE_ORIGIN),
   title: 'Estante Aberta — livros que circulam',
   description:
     'Fotografe seus livros, monte sua estante e compartilhe para doar ou emprestar.',

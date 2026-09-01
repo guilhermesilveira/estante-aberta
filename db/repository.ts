@@ -37,7 +37,6 @@ export type BookRequest = {
 type RuntimeEnv = Cloudflare.Env & {
   DB: D1Database;
   FILES: R2Bucket;
-  PUBLIC_SITE_URL?: string;
 };
 
 export function getRuntimeEnv(): RuntimeEnv {
