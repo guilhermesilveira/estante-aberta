@@ -1,0 +1,86 @@
+import { Clock3, Library, LogOut } from 'lucide-react';
+
+import { requireChatGPTUser, chatGPTSignOutPath } from '@/app/chatgpt-auth';
+import { Brand } from '@/components/brand';
+import { BookUploader } from '@/components/book-uploader';
+import { OwnerLibrary } from '@/components/owner-library';
+import { RequestList } from '@/components/request-list';
+import { buttonVariants } from '@/components/ui/button';
+import { getOrCreateShelf, getOwnerBooks, getOwnerRequests } from '@/db/repository';
+
+export const dynamic = 'force-dynamic';
+
+export default async function MyShelfPage() {
+  const user = await requireChatGPTUser('/minha-estante');
+  const shelf = await getOrCreateShelf(user);
+  const [books, requests] = await Promise.all([
+    getOwnerBooks(user.userId),
+    getOwnerRequests(shelf.id),
+  ]);
+  const pendingRequests = requests.filter((request) => request.status === 'pending').length;
+
+  return (
+    <main className="min-h-screen bg-background text-foreground">
+      <header className="border-b bg-card/90 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
+          <Brand />
+          <div className="flex items-center gap-2">
+            <span className="hidden max-w-48 truncate text-sm text-muted-foreground sm:block">
+              {user.displayName}
+            </span>
+            <a
+              aria-label="Sair da conta"
+              className={buttonVariants({ variant: 'ghost', size: 'icon' })}
+              href={chatGPTSignOutPath('/')}
+              target="_top"
+            >
+              <LogOut />
+            </a>
+          </div>
+        </div>
+      </header>
+
+      <div className="mx-auto w-full max-w-6xl px-5 py-7 sm:px-8 sm:py-10">
+        <section className="mb-7 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <p className="text-xs font-bold uppercase tracking-[0.13em] text-[#d35c41]">Sua conta</p>
+            <h1 className="mt-2 font-heading text-[clamp(2.5rem,7vw,4.6rem)] font-bold leading-none tracking-[-0.065em]">
+              Minha estante
+            </h1>
+            <p className="mt-3 max-w-xl text-muted-foreground">
+              Fotografe, cadastre e escolha o destino de cada livro.
+            </p>
+          </div>
+          <div className="flex gap-3">
+            <div className="rounded-2xl border bg-card px-4 py-3">
+              <Library className="size-4 text-[#387c67]" />
+              <p className="mt-2 font-heading text-2xl font-bold">{books.length}</p>
+              <p className="text-xs text-muted-foreground">livros</p>
+            </div>
+            <div className="rounded-2xl border bg-card px-4 py-3">
+              <Clock3 className="size-4 text-[#d35c41]" />
+              <p className="mt-2 font-heading text-2xl font-bold">{pendingRequests}</p>
+              <p className="text-xs text-muted-foreground">pedidos novos</p>
+            </div>
+          </div>
+        </section>
+
+        <BookUploader defaultOpen={books.length === 0} />
+
+        {books.length > 0 && (
+          <div className="mt-8">
+            <OwnerLibrary initialBooks={books} shelf={shelf} />
+          </div>
+        )}
+
+        <section className="mt-10">
+          <div className="mb-4">
+            <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#d35c41]">Combinar o encontro</p>
+            <h2 className="mt-1 font-heading text-3xl font-bold tracking-[-0.045em]">Pedidos recebidos</h2>
+          </div>
+          <RequestList initialRequests={requests} />
+        </section>
+      </div>
+    </main>
+  );
+}
