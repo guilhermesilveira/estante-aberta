@@ -31,7 +31,11 @@ export type BookRequest = {
   note: string;
   status: 'pending' | 'accepted' | 'declined' | 'completed';
   createdAt: number;
-  books: Array<{ id: string; photoBatchId: string | null; availability: 'loan' | 'donation' }>;
+  books: Array<{
+    id: string;
+    photoBatchId: string | null;
+    availability: 'loan' | 'donation';
+  }>;
 };
 
 type RuntimeEnv = Cloudflare.Env & {
@@ -52,7 +56,7 @@ const schemaStatements = [
     name TEXT NOT NULL,
     slug TEXT NOT NULL,
     intro TEXT NOT NULL DEFAULT 'Escolha os livros que você gostaria de receber.',
-    published INTEGER NOT NULL DEFAULT 0,
+    published INTEGER NOT NULL DEFAULT 1,
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
   )`,
@@ -104,6 +108,7 @@ const schemaStatements = [
   `UPDATE shelves
    SET intro = 'Escolha os livros que você gostaria de receber.'
    WHERE intro = 'Escolha os livros que você gostaria de receber no nosso próximo encontro.'`,
+  `UPDATE shelves SET published = 1 WHERE published = 0`,
 ];
 
 let schemaReady: Promise<void> | null = null;
@@ -145,7 +150,8 @@ function bookFromRow(row: Record<string, unknown>): Book {
   return {
     id: String(row.id),
     shelfId: String(row.shelf_id),
-    photoBatchId: typeof row.photo_batch_id === 'string' ? row.photo_batch_id : null,
+    photoBatchId:
+      typeof row.photo_batch_id === 'string' ? row.photo_batch_id : null,
     title: String(row.title),
     author: optionalText(row.author),
     availability: row.availability === 'donation' ? 'donation' : 'loan',
@@ -186,7 +192,7 @@ export async function getOrCreateShelf(user: ChatGPTUser): Promise<Shelf> {
     .prepare(
       `INSERT INTO shelves
        (id, owner_id, owner_name, owner_email, name, slug, intro, published, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, 0, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?, ?, 1, ?, ?)`,
     )
     .bind(
       id,
@@ -209,24 +215,30 @@ export async function getOrCreateShelf(user: ChatGPTUser): Promise<Shelf> {
     name,
     slug,
     intro: 'Escolha os livros que você gostaria de receber.',
-    published: false,
+    published: true,
   };
 }
 
 export async function getOwnerBooks(userId: string): Promise<Book[]> {
   await ensureSchema();
-  const result = await getRuntimeEnv().DB
-    .prepare(`SELECT * FROM books WHERE owner_id = ? AND status != 'removed' ORDER BY created_at DESC, position ASC`)
+  const result = await getRuntimeEnv()
+    .DB.prepare(
+      `SELECT * FROM books WHERE owner_id = ? AND status != 'removed' ORDER BY created_at DESC, position ASC`,
+    )
     .bind(userId)
     .all<Record<string, unknown>>();
   return result.results.map(bookFromRow);
 }
 
-export async function getOwnerRequests(shelfId: string): Promise<BookRequest[]> {
+export async function getOwnerRequests(
+  shelfId: string,
+): Promise<BookRequest[]> {
   await ensureSchema();
   const db = getRuntimeEnv().DB;
   const requestRows = await db
-    .prepare('SELECT * FROM requests WHERE shelf_id = ? ORDER BY created_at DESC')
+    .prepare(
+      'SELECT * FROM requests WHERE shelf_id = ? ORDER BY created_at ASC',
+    )
     .bind(shelfId)
     .all<Record<string, unknown>>();
   const results: BookRequest[] = [];
@@ -249,7 +261,8 @@ export async function getOwnerRequests(shelfId: string): Promise<BookRequest[]> 
       createdAt: Number(row.created_at),
       books: bookRows.results.map((book) => ({
         id: String(book.id),
-        photoBatchId: typeof book.photo_batch_id === 'string' ? book.photo_batch_id : null,
+        photoBatchId:
+          typeof book.photo_batch_id === 'string' ? book.photo_batch_id : null,
         availability: book.availability === 'donation' ? 'donation' : 'loan',
       })),
     });
@@ -269,7 +282,9 @@ export async function getPublicShelf(
   if (!shelfRow) return null;
   const shelf = shelfFromRow(shelfRow);
   const booksResult = await db
-    .prepare(`SELECT * FROM books WHERE shelf_id = ? AND status = 'available' ORDER BY created_at DESC, position ASC`)
+    .prepare(
+      `SELECT * FROM books WHERE shelf_id = ? AND status = 'available' ORDER BY created_at DESC, position ASC`,
+    )
     .bind(shelf.id)
     .all<Record<string, unknown>>();
   return { shelf, books: booksResult.results.map(bookFromRow) };

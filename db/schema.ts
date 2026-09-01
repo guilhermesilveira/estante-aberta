@@ -1,4 +1,11 @@
-import { index, integer, primaryKey, sqliteTable, text, uniqueIndex } from 'drizzle-orm/sqlite-core';
+import {
+  index,
+  integer,
+  primaryKey,
+  sqliteTable,
+  text,
+  uniqueIndex,
+} from 'drizzle-orm/sqlite-core';
 
 export const shelves = sqliteTable(
   'shelves',
@@ -12,7 +19,9 @@ export const shelves = sqliteTable(
     intro: text('intro')
       .notNull()
       .default('Escolha os livros que você gostaria de receber.'),
-    published: integer('published', { mode: 'boolean' }).notNull().default(false),
+    published: integer('published', { mode: 'boolean' })
+      .notNull()
+      .default(true),
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at').notNull(),
   },
@@ -78,7 +87,9 @@ export const requests = sqliteTable(
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at').notNull(),
   },
-  (table) => [index('idx_requests_shelf_status').on(table.shelfId, table.status)],
+  (table) => [
+    index('idx_requests_shelf_status').on(table.shelfId, table.status),
+  ],
 );
 
 export const requestBooks = sqliteTable(
