@@ -1,5 +1,6 @@
 import { BookOpen, Camera, Check, Send, Sparkles } from 'lucide-react';
 
+import { chatGPTSignInPath } from '@/app/chatgpt-auth';
 import { Badge } from '@/components/ui/badge';
 import { HardLink } from '@/components/hard-link';
 import { buttonVariants } from '@/components/ui/button';
@@ -26,6 +27,8 @@ const sampleBooks = [
 ];
 
 export default function Home() {
+  const myShelfPath = chatGPTSignInPath('/minha-estante');
+
   return (
     <main className="min-h-screen overflow-hidden bg-background text-foreground">
       <header className="mx-auto flex w-full max-w-6xl items-center justify-between px-5 py-5 sm:px-8">
@@ -35,7 +38,7 @@ export default function Home() {
           </span>
           <span className="font-heading text-lg font-bold tracking-[-0.03em]">Estante Aberta</span>
         </HardLink>
-        <HardLink className={buttonVariants({ variant: 'outline', className: 'h-10 rounded-full px-4' })} href="/minha-estante">
+        <HardLink className={buttonVariants({ variant: 'outline', className: 'h-10 rounded-full px-4' })} href={myShelfPath} target="_top">
           Minha estante
         </HardLink>
       </header>
@@ -53,7 +56,7 @@ export default function Home() {
             Fotografe uma pilha, cadastre os livros do seu jeito e compartilhe sua estante com quem você gosta — para doar ou emprestar.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-            <HardLink className={buttonVariants({ className: 'h-14 rounded-2xl px-6 text-base shadow-[0_12px_28px_rgb(24_69_56/20%)]' })} href="/minha-estante">
+            <HardLink className={buttonVariants({ className: 'h-14 rounded-2xl px-6 text-base shadow-[0_12px_28px_rgb(24_69_56/20%)]' })} href={myShelfPath} target="_top">
               <Camera className="size-5" data-icon="inline-start" />
               Fotografar meus livros
             </HardLink>
