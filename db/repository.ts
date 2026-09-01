@@ -31,7 +31,7 @@ export type BookRequest = {
   note: string;
   status: 'pending' | 'accepted' | 'declined' | 'completed';
   createdAt: number;
-  books: Array<{ id: string; title: string; availability: 'loan' | 'donation' }>;
+  books: Array<{ id: string; photoBatchId: string | null; availability: 'loan' | 'donation' }>;
 };
 
 type RuntimeEnv = Cloudflare.Env & {
@@ -51,7 +51,7 @@ const schemaStatements = [
     owner_email TEXT NOT NULL,
     name TEXT NOT NULL,
     slug TEXT NOT NULL,
-    intro TEXT NOT NULL DEFAULT 'Escolha os livros que você gostaria de receber no nosso próximo encontro.',
+    intro TEXT NOT NULL DEFAULT 'Escolha os livros que você gostaria de receber.',
     published INTEGER NOT NULL DEFAULT 0,
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
@@ -101,6 +101,9 @@ const schemaStatements = [
     PRIMARY KEY(request_id, book_id)
   )`,
   `CREATE INDEX IF NOT EXISTS idx_request_books_book_id ON request_books(book_id)`,
+  `UPDATE shelves
+   SET intro = 'Escolha os livros que você gostaria de receber.'
+   WHERE intro = 'Escolha os livros que você gostaria de receber no nosso próximo encontro.'`,
 ];
 
 let schemaReady: Promise<void> | null = null;
@@ -192,7 +195,7 @@ export async function getOrCreateShelf(user: ChatGPTUser): Promise<Shelf> {
       user.email,
       name,
       slug,
-      'Escolha os livros que você gostaria de receber no nosso próximo encontro.',
+      'Escolha os livros que você gostaria de receber.',
       now,
       now,
     )
@@ -205,7 +208,7 @@ export async function getOrCreateShelf(user: ChatGPTUser): Promise<Shelf> {
     ownerEmail: user.email,
     name,
     slug,
-    intro: 'Escolha os livros que você gostaria de receber no nosso próximo encontro.',
+    intro: 'Escolha os livros que você gostaria de receber.',
     published: false,
   };
 }
@@ -231,7 +234,7 @@ export async function getOwnerRequests(shelfId: string): Promise<BookRequest[]> 
   for (const row of requestRows.results) {
     const bookRows = await db
       .prepare(
-        `SELECT books.id, books.title, books.availability
+        `SELECT books.id, books.photo_batch_id, books.availability
          FROM request_books JOIN books ON books.id = request_books.book_id
          WHERE request_books.request_id = ? ORDER BY books.title`,
       )
@@ -246,7 +249,7 @@ export async function getOwnerRequests(shelfId: string): Promise<BookRequest[]> 
       createdAt: Number(row.created_at),
       books: bookRows.results.map((book) => ({
         id: String(book.id),
-        title: String(book.title),
+        photoBatchId: typeof book.photo_batch_id === 'string' ? book.photo_batch_id : null,
         availability: book.availability === 'donation' ? 'donation' : 'loan',
       })),
     });

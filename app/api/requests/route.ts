@@ -10,8 +10,8 @@ export async function POST(request: Request) {
     ? [...new Set(body.bookIds.filter((id): id is string => typeof id === 'string'))]
     : [];
 
-  if (!slug || !requesterName || bookIds.length < 1 || bookIds.length > 8) {
-    return Response.json({ error: 'Escolha de 1 a 8 livros e informe seu nome.' }, { status: 400 });
+  if (!slug || !requesterName || bookIds.length < 1) {
+    return Response.json({ error: 'Escolha pelo menos um livro e informe seu nome.' }, { status: 400 });
   }
 
   await ensureSchema();

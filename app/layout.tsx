@@ -21,13 +21,13 @@ export const metadata: Metadata = {
     'Fotografe seus livros, monte sua estante e compartilhe para doar ou emprestar.',
   openGraph: {
     title: 'Estante Aberta',
-    description: 'Livros que circulam para doar, emprestar e criar novos encontros.',
+    description: 'Livros que circulam para doar, emprestar e compartilhar.',
     images: ['/og.png'],
   },
   twitter: {
     card: 'summary_large_image',
     title: 'Estante Aberta',
-    description: 'Livros que circulam para doar, emprestar e criar novos encontros.',
+    description: 'Livros que circulam para doar, emprestar e compartilhar.',
     images: ['/og.png'],
   },
 };

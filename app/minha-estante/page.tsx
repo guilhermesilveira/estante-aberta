@@ -48,7 +48,7 @@ export default async function MyShelfPage() {
               Minha estante
             </h1>
             <p className="mt-3 max-w-xl text-muted-foreground">
-              Fotografe, cadastre e escolha o destino de cada livro.
+              Fotografe um livro e escolha entre doação ou empréstimo.
             </p>
           </div>
           <div className="flex gap-3">
@@ -75,7 +75,7 @@ export default async function MyShelfPage() {
 
         <section className="mt-10">
           <div className="mb-4">
-            <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#d35c41]">Combinar o encontro</p>
+            <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#d35c41]">Organizar pedidos</p>
             <h2 className="mt-1 font-heading text-3xl font-bold tracking-[-0.045em]">Pedidos recebidos</h2>
           </div>
           <RequestList initialRequests={requests} />

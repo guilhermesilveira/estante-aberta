@@ -1,7 +1,8 @@
 'use client';
 
 import { useState } from 'react';
-import { Check, Clock3, LoaderCircle, MessageCircle, PackageCheck, X } from 'lucide-react';
+import { BookOpen, Check, Clock3, LoaderCircle, MessageCircle, PackageCheck, X } from 'lucide-react';
+import Image from 'next/image';
 
 import { Badge } from '@/components/ui/badge';
 import { Button, buttonVariants } from '@/components/ui/button';
@@ -58,8 +59,14 @@ export function RequestList({ initialRequests }: { initialRequests: BookRequest[
             <span className="text-xs text-muted-foreground">{new Intl.DateTimeFormat('pt-BR', { day: '2-digit', month: 'short' }).format(new Date(request.createdAt))}</span>
           </div>
           <div className="mt-4 flex flex-wrap gap-2">
-            {request.books.map((book) => (
-              <span className="rounded-full bg-[#f6f1e8] px-3 py-1.5 text-sm font-medium" key={book.id}>{book.title}</span>
+            {request.books.map((book, index) => (
+              <div className="relative size-16 overflow-hidden rounded-xl bg-[#e8dfcd]" key={book.id} title={`Livro ${index + 1}`}>
+                {book.photoBatchId ? (
+                  <Image fill unoptimized sizes="64px" className="object-cover" src={`/api/photos/${book.photoBatchId}`} alt={`Livro ${index + 1} do pedido`} />
+                ) : (
+                  <span className="grid size-full place-items-center"><BookOpen className="size-5" /></span>
+                )}
+              </div>
             ))}
           </div>
           {request.note && <p className="mt-4 border-l-2 border-[#f0be46] pl-3 text-sm italic text-muted-foreground">{request.note}</p>}

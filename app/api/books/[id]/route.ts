@@ -29,14 +29,6 @@ export async function PATCH(
     fields.push('status = ?');
     values.push(body.status);
   }
-  if (typeof body.title === 'string' && body.title.trim()) {
-    fields.push('title = ?');
-    values.push(body.title.trim().slice(0, 180));
-  }
-  if (typeof body.author === 'string') {
-    fields.push('author = ?');
-    values.push(body.author.trim().slice(0, 140));
-  }
   if (!fields.length) return Response.json({ error: 'Nenhuma alteração válida.' }, { status: 400 });
   fields.push('updated_at = ?');
   values.push(Date.now(), id, user.userId);

@@ -17,7 +17,7 @@ export async function generateMetadata({
   if (!data) return { title: 'Estante não encontrada' };
 
   const title = `${data.shelf.name} — Estante Aberta`;
-  const description = `${data.books.length} livros disponíveis para doar ou emprestar. Escolha até 8.`;
+  const description = `${data.books.length} livros disponíveis para doar ou emprestar.`;
   const firstPhoto = data.books.find((book) => book.photoBatchId)?.photoBatchId;
   const images = firstPhoto ? [new URL(`/api/photos/${firstPhoto}`, SITE_ORIGIN).toString()] : [];
 

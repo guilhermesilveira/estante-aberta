@@ -1,4 +1,5 @@
 import { BookOpen, Camera, Check, Send, Sparkles } from 'lucide-react';
+import Image from 'next/image';
 
 import { chatGPTSignInPath } from '@/app/chatgpt-auth';
 import { Badge } from '@/components/ui/badge';
@@ -7,22 +8,22 @@ import { buttonVariants } from '@/components/ui/button';
 
 const sampleBooks = [
   {
-    title: 'Ideias para adiar o fim do mundo',
-    author: 'Ailton Krenak',
+    title: 'O Menino Maluquinho',
+    author: 'Ziraldo',
     mode: 'Empresto',
-    tone: 'bg-[#ef6d4e]',
+    cover: '/covers/menino-maluquinho.jpg',
   },
   {
-    title: 'Torto arado',
-    author: 'Itamar Vieira Junior',
+    title: 'Marcelo, marmelo, martelo',
+    author: 'Ruth Rocha',
     mode: 'Doação',
-    tone: 'bg-[#e2b63d]',
+    cover: '/covers/marcelo-marmelo-martelo.webp',
   },
   {
-    title: 'Quarto de despejo',
-    author: 'Carolina Maria de Jesus',
+    title: 'Menina bonita do laço de fita',
+    author: 'Ana Maria Machado',
     mode: 'Empresto',
-    tone: 'bg-[#387c67]',
+    cover: '/covers/menina-bonita-do-laco-de-fita.jpg',
   },
 ];
 
@@ -53,7 +54,7 @@ export default function Home() {
             Seus livros podem encontrar novas mãos.
           </h1>
           <p className="mt-6 max-w-lg text-lg leading-8 text-muted-foreground">
-            Fotografe uma pilha, cadastre os livros do seu jeito e compartilhe sua estante com quem você gosta — para doar ou emprestar.
+            Fotografe um livro por vez, escolha se quer doar ou emprestar e compartilhe sua estante com quem você gosta.
           </p>
           <div className="mt-8 flex flex-col gap-3 sm:flex-row">
             <HardLink className={buttonVariants({ className: 'h-14 rounded-2xl px-6 text-base shadow-[0_12px_28px_rgb(24_69_56/20%)]' })} href={myShelfPath} target="_top">
@@ -66,7 +67,7 @@ export default function Home() {
           </div>
           <p className="mt-4 flex items-center gap-2 text-sm text-muted-foreground">
             <Check className="size-4 text-[#387c67]" />
-            Uma foto pode registrar vários livros de uma vez.
+            Uma foto vira um livro na sua estante.
           </p>
         </div>
 
@@ -86,11 +87,9 @@ export default function Home() {
             <div className="grid grid-cols-3 gap-3 sm:gap-5">
               {sampleBooks.map((book, index) => (
                 <article className="min-w-0" key={book.title}>
-                  <div className={`${book.tone} relative aspect-[3/4] overflow-hidden rounded-[16px] p-3 text-white shadow-[0_12px_22px_rgb(46_44_37/16%)]`}>
-                    <span className="absolute inset-y-0 left-3 w-px bg-white/30" />
-                    <span className="absolute right-2 top-2 text-[10px] font-semibold opacity-70">0{index + 1}</span>
-                    <p className="mt-8 font-heading text-[clamp(0.72rem,2.4vw,1.05rem)] font-bold leading-tight tracking-[-0.025em]">{book.title}</p>
-                    <p className="absolute bottom-3 left-3 right-2 text-[9px] font-medium uppercase tracking-[0.08em] opacity-80">{book.author}</p>
+                  <div className="relative aspect-[3/4] overflow-hidden rounded-[16px] bg-white shadow-[0_12px_22px_rgb(46_44_37/16%)]">
+                    <Image fill sizes="(max-width: 640px) 30vw, 180px" className="object-contain" src={book.cover} alt={`Capa de ${book.title}`} />
+                    <span className="absolute right-2 top-2 rounded-full bg-black/65 px-2 py-1 text-[10px] font-semibold text-white">0{index + 1}</span>
                   </div>
                   <p className="mt-3 truncate text-sm font-semibold">{book.title}</p>
                   <p className="mt-1 text-xs text-muted-foreground">{book.mode}</p>
@@ -98,7 +97,7 @@ export default function Home() {
               ))}
             </div>
             <div className="mt-6 rounded-2xl bg-[#f4efe4] px-4 py-3 text-center text-sm font-medium text-[#725c29]">
-              Escolha até 8 para o próximo encontro
+              Escolha quantos livros quiser
             </div>
           </div>
         </div>
@@ -107,9 +106,9 @@ export default function Home() {
       <section className="border-y border-border/70 bg-[#f6f1e8]" id="como-funciona">
         <div className="mx-auto grid w-full max-w-6xl gap-8 px-5 py-10 sm:grid-cols-3 sm:px-8 sm:py-14">
           {[
-            ['01', 'Fotografe', 'Aponte a câmera para a pilha ou para a prateleira.'],
-            ['02', 'Cadastre', 'Anote os títulos e escolha: doar ou emprestar.'],
-            ['03', 'Compartilhe', 'Envie no WhatsApp e combine a entrega no encontro.'],
+            ['01', 'Fotografe', 'Abra a câmera ou envie uma foto do livro.'],
+            ['02', 'Escolha', 'Marque o livro como doação ou empréstimo.'],
+            ['03', 'Compartilhe', 'Envie no WhatsApp e combine a entrega.'],
           ].map(([number, title, description]) => (
             <article className="flex gap-4" key={number}>
               <span className="font-heading text-sm font-bold text-[#d35c41]">{number}</span>

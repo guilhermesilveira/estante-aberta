@@ -1,10 +1,9 @@
 'use client';
 
 import { useMemo, useState } from 'react';
-import { Check, Copy, ExternalLink, Gift, Handshake, LoaderCircle, MessageCircle, PackageCheck, Trash2 } from 'lucide-react';
+import { BookOpen, Check, Copy, ExternalLink, Gift, Handshake, LoaderCircle, MessageCircle, RotateCcw, Trash2 } from 'lucide-react';
 import Image from 'next/image';
 
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import type { Book, Shelf } from '@/db/repository';
 
@@ -42,7 +41,7 @@ export function OwnerLibrary({ initialBooks, shelf }: { initialBooks: Book[]; sh
   }
 
   function shareWhatsApp() {
-    const text = `Abri minha Estante Aberta. Escolha até 8 livros para eu levar no nosso próximo encontro: ${publicUrl}`;
+    const text = `Abri minha Estante Aberta. Escolha os livros que você quiser: ${publicUrl}`;
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank', 'noopener,noreferrer');
   }
 
@@ -83,7 +82,7 @@ export function OwnerLibrary({ initialBooks, shelf }: { initialBooks: Book[]; sh
               {published ? 'Sua estante está pronta para circular' : 'Publique quando estiver pronta'}
             </h2>
             <p className="mt-2 max-w-xl text-sm leading-6 text-white/70">
-              Seus colegas abrem o link, escolhem até oito livros e enviam o pedido para você confirmar.
+              Seus colegas abrem o link, escolhem os livros que quiserem e enviam o pedido para você confirmar.
             </p>
           </div>
           <div className="flex shrink-0 flex-wrap gap-2">
@@ -116,38 +115,60 @@ export function OwnerLibrary({ initialBooks, shelf }: { initialBooks: Book[]; sh
           </div>
         </div>
         <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-          {books.map((book, index) => {
-            const unavailable = book.status !== 'available';
+          {books.map((book) => {
+            const statusLabel = {
+              available: 'Disponível',
+              reserved: 'Reservado',
+              loaned: 'Emprestado',
+              given: 'Doado',
+              removed: 'Removido',
+            }[book.status];
             return (
-              <article className={`overflow-hidden rounded-[24px] border bg-card shadow-[0_12px_38px_rgb(44_43_37/7%)] ${unavailable ? 'opacity-70' : ''}`} key={book.id}>
-                <div className="relative aspect-[16/9] overflow-hidden bg-[#e8dfcd]">
+              <article className="overflow-hidden rounded-[24px] border bg-card shadow-[0_12px_38px_rgb(44_43_37/7%)]" key={book.id}>
+                <div className="relative aspect-[4/3] overflow-hidden bg-[#e8dfcd]">
                   {book.photoBatchId ? (
-                    <Image fill unoptimized sizes="(max-width: 640px) 100vw, 33vw" className="object-cover" src={`/api/photos/${book.photoBatchId}`} alt={`Foto com ${book.title}`} />
+                    <Image fill unoptimized sizes="(max-width: 640px) 100vw, 33vw" className="object-contain" src={`/api/photos/${book.photoBatchId}`} alt="Foto do livro" />
                   ) : (
-                    <div className={`grid size-full place-items-center ${['bg-[#ef6d4e]', 'bg-[#e2b63d]', 'bg-[#387c67]'][index % 3]} p-6 text-white`}>
-                      <p className="max-w-56 text-center font-heading text-2xl font-bold leading-tight">{book.title}</p>
+                    <div className="grid size-full place-items-center bg-[#387c67] text-white">
+                      <BookOpen className="size-12" />
                     </div>
                   )}
-                  <Badge className="absolute left-3 top-3 bg-white/90 text-[#183d33] shadow-sm" variant="secondary">
-                    {book.availability === 'donation' ? <Gift /> : <Handshake />}
-                    {book.availability === 'donation' ? 'Doação' : 'Empréstimo'}
-                  </Badge>
                 </div>
                 <div className="p-4">
-                  <h3 className="font-heading text-xl font-bold leading-tight tracking-[-0.03em]">{book.title}</h3>
-                  <p className="mt-1 text-sm text-muted-foreground">{book.author || 'Autor não informado'}</p>
-                  <div className="mt-4 grid grid-cols-2 gap-2">
-                    <Button className="h-9 rounded-xl" size="sm" variant="outline" disabled={busy === book.id} onClick={() => patchBook(book.id, { availability: book.availability === 'loan' ? 'donation' : 'loan' })}>
-                      {book.availability === 'loan' ? <Gift /> : <Handshake />}
-                      Mudar para {book.availability === 'loan' ? 'doação' : 'empréstimo'}
-                    </Button>
-                    <Button className="h-9 rounded-xl" size="sm" variant="outline" disabled={busy === book.id} onClick={() => patchBook(book.id, { status: unavailable ? 'available' : book.availability === 'donation' ? 'given' : 'loaned' })}>
-                      <PackageCheck /> {unavailable ? 'Disponibilizar' : 'Marcar entregue'}
+                  <div className="flex items-center justify-between gap-3">
+                    <span className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-bold ${book.availability === 'donation' ? 'bg-[#fff0eb] text-[#a74630]' : 'bg-[#e8f2ed] text-[#275b4b]'}`}>
+                      {book.availability === 'donation' ? <Gift className="size-4" /> : <Handshake className="size-4" />}
+                      {book.availability === 'donation' ? 'Doação' : 'Empréstimo'}
+                    </span>
+                    <span className="text-xs font-semibold text-muted-foreground">{statusLabel}</span>
+                  </div>
+                  <button
+                    type="button"
+                    role="switch"
+                    aria-checked={book.availability === 'donation'}
+                    aria-label="Alternar entre empréstimo e doação"
+                    className="mt-4 grid w-full grid-cols-2 rounded-xl bg-[#f6f1e8] p-1 text-sm font-semibold disabled:cursor-not-allowed disabled:opacity-50"
+                    disabled={busy === book.id || book.status !== 'available'}
+                    onClick={() => patchBook(book.id, { availability: book.availability === 'loan' ? 'donation' : 'loan' })}
+                  >
+                    <span className={`rounded-lg px-2 py-2 ${book.availability === 'loan' ? 'bg-white text-[#275b4b] shadow-sm' : 'text-muted-foreground'}`}>Empréstimo</span>
+                    <span className={`rounded-lg px-2 py-2 ${book.availability === 'donation' ? 'bg-white text-[#a74630] shadow-sm' : 'text-muted-foreground'}`}>Doação</span>
+                  </button>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    {book.status === 'loaned' && (
+                      <Button className="h-9 rounded-xl" size="sm" variant="outline" disabled={busy === book.id} onClick={() => patchBook(book.id, { status: 'available' })}>
+                        <RotateCcw /> Marcar devolvido
+                      </Button>
+                    )}
+                    {book.status === 'reserved' && (
+                      <Button className="h-9 rounded-xl" size="sm" variant="outline" disabled={busy === book.id} onClick={() => patchBook(book.id, { status: 'available' })}>
+                        <RotateCcw /> Liberar reserva
+                      </Button>
+                    )}
+                    <Button className="h-9 text-muted-foreground" size="sm" variant="ghost" disabled={busy === book.id} onClick={() => removeBook(book.id)}>
+                      <Trash2 /> Remover
                     </Button>
                   </div>
-                  <Button className="mt-2 h-8 px-2 text-muted-foreground" size="sm" variant="ghost" disabled={busy === book.id} onClick={() => removeBook(book.id)}>
-                    <Trash2 /> Remover
-                  </Button>
                 </div>
               </article>
             );

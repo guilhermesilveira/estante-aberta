@@ -11,7 +11,7 @@ export const shelves = sqliteTable(
     slug: text('slug').notNull(),
     intro: text('intro')
       .notNull()
-      .default('Escolha os livros que você gostaria de receber no nosso próximo encontro.'),
+      .default('Escolha os livros que você gostaria de receber.'),
     published: integer('published', { mode: 'boolean' }).notNull().default(false),
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at').notNull(),

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { ArrowLeft, BookCheck, Check, Gift, Handshake, LoaderCircle, Send, ShoppingBag, X } from 'lucide-react';
+import { ArrowLeft, BookCheck, BookOpen, Check, Gift, Handshake, LoaderCircle, Send, ShoppingBag, X } from 'lucide-react';
 import Image from 'next/image';
 
 import { Badge } from '@/components/ui/badge';
@@ -10,8 +10,6 @@ import { HardLink } from '@/components/hard-link';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import type { Book, Shelf } from '@/db/repository';
-
-const MAX_BOOKS = 8;
 
 export function PublicShelf({ books, shelf }: { books: Book[]; shelf: Shelf }) {
   const [selected, setSelected] = useState<string[]>([]);
@@ -27,10 +25,6 @@ export function PublicShelf({ books, shelf }: { books: Book[]; shelf: Shelf }) {
     setError('');
     setSelected((current) => {
       if (current.includes(bookId)) return current.filter((id) => id !== bookId);
-      if (current.length >= MAX_BOOKS) {
-        setError(`Você já escolheu o limite de ${MAX_BOOKS} livros.`);
-        return current;
-      }
       return [...current, bookId];
     });
   }
@@ -69,7 +63,7 @@ export function PublicShelf({ books, shelf }: { books: Book[]; shelf: Shelf }) {
           <p className="mt-5 text-xs font-bold uppercase tracking-[0.12em] text-[#d35c41]">Pedido {successCode}</p>
           <h1 className="mt-2 font-heading text-4xl font-bold leading-tight tracking-[-0.055em]">Sua sacola de histórias foi enviada.</h1>
           <p className="mx-auto mt-4 max-w-sm leading-7 text-muted-foreground">
-            {shelf.ownerName} vai confirmar quais livros consegue levar. Depois, é só combinar o próximo encontro.
+            {shelf.ownerName} vai confirmar quais livros estão disponíveis. Depois, é só combinar a entrega.
           </p>
           <Button className="mt-7 h-11 rounded-xl" variant="outline" onClick={() => window.location.reload()}>
             Voltar para a estante
@@ -89,10 +83,15 @@ export function PublicShelf({ books, shelf }: { books: Book[]; shelf: Shelf }) {
           </Button>
           <p className="mt-4 text-xs font-bold uppercase tracking-[0.12em] text-[#d35c41]">Quase lá</p>
           <h1 className="mt-1 font-heading text-4xl font-bold tracking-[-0.055em]">Envie sua escolha</h1>
-          <div className="mt-5 flex flex-wrap gap-2">
-            {chosenBooks.map((book) => (
-              <button className="flex items-center gap-1 rounded-full bg-[#f6f1e8] px-3 py-1.5 text-sm font-medium" key={book.id} type="button" onClick={() => toggle(book.id)}>
-                {book.title} <X className="size-3.5" />
+          <div className="mt-5 grid grid-cols-3 gap-2 sm:grid-cols-5">
+            {chosenBooks.map((book, index) => (
+              <button className="group relative aspect-square overflow-hidden rounded-2xl bg-[#e8dfcd]" aria-label={`Remover livro ${index + 1} da escolha`} key={book.id} type="button" onClick={() => toggle(book.id)}>
+                {book.photoBatchId ? (
+                  <Image fill unoptimized sizes="120px" className="object-cover" src={`/api/photos/${book.photoBatchId}`} alt="Foto do livro escolhido" />
+                ) : (
+                  <span className="grid size-full place-items-center"><BookOpen /></span>
+                )}
+                <span className="absolute right-1.5 top-1.5 grid size-7 place-items-center rounded-full bg-black/65 text-white"><X className="size-3.5" /></span>
               </button>
             ))}
           </div>
@@ -107,7 +106,7 @@ export function PublicShelf({ books, shelf }: { books: Book[]; shelf: Shelf }) {
             </label>
             <label className="block text-sm font-semibold" htmlFor="request-note">
               Recado <span className="font-normal text-muted-foreground">(opcional)</span>
-              <Textarea id="request-note" className="mt-1 min-h-24 rounded-xl bg-background" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Ex.: posso devolver no encontro do mês que vem." maxLength={400} />
+              <Textarea id="request-note" className="mt-1 min-h-24 rounded-xl bg-background" value={note} onChange={(event) => setNote(event.target.value)} placeholder="Ex.: posso devolver no mês que vem." maxLength={400} />
             </label>
             {error && <p className="rounded-xl bg-destructive/10 px-4 py-3 text-sm font-medium text-destructive" role="alert">{error}</p>}
             <Button className="h-12 w-full rounded-2xl text-base" type="submit" disabled={busy || !selected.length}>
@@ -140,29 +139,27 @@ export function PublicShelf({ books, shelf }: { books: Book[]; shelf: Shelf }) {
 
       <section className="mx-auto -mt-6 w-full max-w-5xl px-5 sm:-mt-8">
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-card px-4 py-3 shadow-[0_12px_38px_rgb(44_43_37/8%)]">
-          <p className="text-sm font-semibold">Escolha de 1 a {MAX_BOOKS} livros</p>
+          <p className="text-sm font-semibold">Escolha quantos livros quiser</p>
           <p className="text-sm text-muted-foreground">{books.length} disponíveis</p>
         </div>
         {books.length ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">
             {books.map((book, index) => {
               const isSelected = selected.includes(book.id);
-              const atLimit = selected.length >= MAX_BOOKS && !isSelected;
               return (
                 <button
                   type="button"
                   aria-pressed={isSelected}
-                  disabled={atLimit}
-                  className={`group overflow-hidden rounded-[22px] border bg-card text-left shadow-[0_10px_30px_rgb(44_43_37/7%)] transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#387c67]/25 ${isSelected ? 'border-[#387c67] ring-2 ring-[#387c67]' : 'hover:-translate-y-0.5 hover:border-[#387c67]/40'} ${atLimit ? 'opacity-45' : ''}`}
+                  className={`group overflow-hidden rounded-[22px] border bg-card text-left shadow-[0_10px_30px_rgb(44_43_37/7%)] transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#387c67]/25 ${isSelected ? 'border-[#387c67] ring-2 ring-[#387c67]' : 'hover:-translate-y-0.5 hover:border-[#387c67]/40'}`}
                   key={book.id}
                   onClick={() => toggle(book.id)}
                 >
                   <div className="relative aspect-[4/3] overflow-hidden bg-[#e8dfcd]">
                     {book.photoBatchId ? (
-                      <Image fill unoptimized sizes="(max-width: 640px) 50vw, 25vw" className="object-cover transition duration-300 group-hover:scale-[1.03]" src={`/api/photos/${book.photoBatchId}`} alt={`Foto com ${book.title}`} />
+                      <Image fill unoptimized sizes="(max-width: 640px) 50vw, 25vw" className="object-contain transition duration-300 group-hover:scale-[1.03]" src={`/api/photos/${book.photoBatchId}`} alt="Foto do livro" />
                     ) : (
-                      <div className={`grid size-full place-items-center ${['bg-[#ef6d4e]', 'bg-[#e2b63d]', 'bg-[#387c67]', 'bg-[#5c7195]'][index % 4]} p-4 text-center text-white`}>
-                        <span className="font-heading text-lg font-bold leading-tight">{book.title}</span>
+                      <div className={`grid size-full place-items-center ${['bg-[#ef6d4e]', 'bg-[#e2b63d]', 'bg-[#387c67]', 'bg-[#5c7195]'][index % 4]} text-white`}>
+                        <BookOpen className="size-9" />
                       </div>
                     )}
                     <span className={`absolute right-2 top-2 grid size-7 place-items-center rounded-full border-2 ${isSelected ? 'border-white bg-[#387c67] text-white' : 'border-white bg-white/85 text-transparent'}`}>
@@ -174,8 +171,6 @@ export function PublicShelf({ books, shelf }: { books: Book[]; shelf: Shelf }) {
                       {book.availability === 'donation' ? <Gift /> : <Handshake />}
                       {book.availability === 'donation' ? 'Doação' : 'Empréstimo'}
                     </Badge>
-                    <h2 className="mt-2 line-clamp-2 font-heading text-lg font-bold leading-tight tracking-[-0.03em]">{book.title}</h2>
-                    {book.author && <p className="mt-1 line-clamp-1 text-xs text-muted-foreground">{book.author}</p>}
                   </div>
                 </button>
               );
@@ -194,7 +189,7 @@ export function PublicShelf({ books, shelf }: { books: Book[]; shelf: Shelf }) {
         <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 p-3 backdrop-blur sm:p-4">
           <div className="mx-auto flex max-w-3xl items-center justify-between gap-4">
             <div className="min-w-0">
-              <p className="font-heading text-xl font-bold tracking-[-0.03em]">{selected.length} de {MAX_BOOKS}</p>
+              <p className="font-heading text-xl font-bold tracking-[-0.03em]">{selected.length} {selected.length === 1 ? 'selecionado' : 'selecionados'}</p>
               <p className="truncate text-xs text-muted-foreground">na sua sacola de histórias</p>
             </div>
             <Button className="h-12 rounded-2xl px-5 text-base" onClick={() => setShowForm(true)}>
