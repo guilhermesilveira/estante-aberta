@@ -1,13 +1,6 @@
 'use client';
 
-import {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useRef,
-  useState,
-} from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   Check,
   Download,
@@ -18,9 +11,14 @@ import {
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
+import {
+  APP_INSTALLED_EVENT,
+  INSTALL_REQUEST_EVENT,
+  requestAppInstall,
+  type InstallReason,
+} from '@/lib/install-app';
 import { cn } from '@/lib/utils';
 
-type InstallReason = 'manual' | 'share' | 'loan';
 type InstallStep = 'intro' | 'working' | 'instructions';
 
 type InstallChoice = {
@@ -33,13 +31,7 @@ interface BeforeInstallPromptEvent extends Event {
   userChoice: Promise<InstallChoice>;
 }
 
-type InstallAppContextValue = {
-  isInstalled: boolean;
-  offerInstall: (reason?: InstallReason) => void;
-};
-
 const AUTO_INVITE_KEY = 'estante-aberta:install-invite-shown';
-const InstallAppContext = createContext<InstallAppContextValue | null>(null);
 
 function isStandalone() {
   const navigatorWithStandalone = navigator as Navigator & {
@@ -66,6 +58,10 @@ function isIOSSafari() {
   );
 }
 
+function announceInstalled() {
+  window.dispatchEvent(new Event(APP_INSTALLED_EVENT));
+}
+
 export function InstallAppProvider({
   children,
 }: {
@@ -73,7 +69,6 @@ export function InstallAppProvider({
 }) {
   const [deferredPrompt, setDeferredPrompt] =
     useState<BeforeInstallPromptEvent | null>(null);
-  const [isInstalled, setIsInstalled] = useState(false);
   const [open, setOpen] = useState(false);
   const [reason, setReason] = useState<InstallReason>('manual');
   const [step, setStep] = useState<InstallStep>('intro');
@@ -95,15 +90,41 @@ export function InstallAppProvider({
 
     function markInstalled() {
       setDeferredPrompt(null);
-      setIsInstalled(true);
       setOpen(false);
+      announceInstalled();
+    }
+
+    function receiveInstallRequest(event: Event) {
+      const nextReason =
+        (event as CustomEvent<InstallReason>).detail ?? 'manual';
+      if (isStandalone()) {
+        announceInstalled();
+        return;
+      }
+
+      if (nextReason !== 'manual') {
+        if (autoInviteShown.current) return;
+        try {
+          if (window.localStorage.getItem(AUTO_INVITE_KEY)) return;
+          window.localStorage.setItem(AUTO_INVITE_KEY, nextReason);
+        } catch {
+          // A sessão ainda evita repetição quando o navegador bloqueia storage.
+        }
+        autoInviteShown.current = true;
+      }
+
+      setReason(nextReason);
+      setStep('intro');
+      setOpen(true);
     }
 
     window.addEventListener('beforeinstallprompt', captureInstallPrompt);
     window.addEventListener('appinstalled', markInstalled);
+    window.addEventListener(INSTALL_REQUEST_EVENT, receiveInstallRequest);
     return () => {
       window.removeEventListener('beforeinstallprompt', captureInstallPrompt);
       window.removeEventListener('appinstalled', markInstalled);
+      window.removeEventListener(INSTALL_REQUEST_EVENT, receiveInstallRequest);
     };
   }, []);
 
@@ -124,28 +145,6 @@ export function InstallAppProvider({
     };
   }, [open, step]);
 
-  const offerInstall = useCallback((nextReason: InstallReason = 'manual') => {
-    if (isStandalone()) {
-      setIsInstalled(true);
-      return;
-    }
-
-    if (nextReason !== 'manual') {
-      if (autoInviteShown.current) return;
-      try {
-        if (window.localStorage.getItem(AUTO_INVITE_KEY)) return;
-        window.localStorage.setItem(AUTO_INVITE_KEY, nextReason);
-      } catch {
-        // A sessão ainda evita repetição quando o navegador bloqueia storage.
-      }
-      autoInviteShown.current = true;
-    }
-
-    setReason(nextReason);
-    setStep('intro');
-    setOpen(true);
-  }, []);
-
   async function install() {
     if (!deferredPrompt) {
       setStep('instructions');
@@ -158,14 +157,13 @@ export function InstallAppProvider({
     try {
       await prompt.prompt();
       const choice = await prompt.userChoice;
-      if (choice.outcome === 'accepted') setIsInstalled(true);
+      if (choice.outcome === 'accepted') announceInstalled();
       setOpen(false);
     } catch {
       setStep('instructions');
     }
   }
 
-  const context = { isInstalled, offerInstall };
   const reasonText =
     reason === 'share'
       ? 'Assim, sua estante fica a um toque de distância para você acompanhar os próximos pedidos.'
@@ -174,7 +172,7 @@ export function InstallAppProvider({
         : 'Tenha a Estante Aberta na sua tela inicial e abra como um aplicativo, sem precisar procurar o site.';
 
   return (
-    <InstallAppContext.Provider value={context}>
+    <>
       {children}
       {open && (
         <div
@@ -286,16 +284,8 @@ export function InstallAppProvider({
           </dialog>
         </div>
       )}
-    </InstallAppContext.Provider>
+    </>
   );
-}
-
-export function useInstallApp() {
-  const context = useContext(InstallAppContext);
-  if (!context) {
-    throw new Error('useInstallApp precisa de InstallAppProvider.');
-  }
-  return context;
 }
 
 export function InstallAppButton({
@@ -305,8 +295,19 @@ export function InstallAppButton({
   className?: string;
   onDark?: boolean;
 }) {
-  const { isInstalled, offerInstall } = useInstallApp();
-  if (isInstalled) return null;
+  const [installed, setInstalled] = useState(false);
+
+  useEffect(() => {
+    function hideInstallButton() {
+      setInstalled(true);
+    }
+
+    window.addEventListener(APP_INSTALLED_EVENT, hideInstallButton);
+    return () =>
+      window.removeEventListener(APP_INSTALLED_EVENT, hideInstallButton);
+  }, []);
+
+  if (installed) return null;
 
   return (
     <Button
@@ -317,7 +318,7 @@ export function InstallAppButton({
         className,
       )}
       variant="outline"
-      onClick={() => offerInstall('manual')}
+      onClick={() => requestAppInstall('manual')}
     >
       <Download /> Instalar no celular
     </Button>

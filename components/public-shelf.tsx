@@ -19,9 +19,10 @@ import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { HardLink } from '@/components/hard-link';
-import { InstallAppButton, useInstallApp } from '@/components/install-app';
+import { InstallAppButton } from '@/components/install-app';
 import { TermsLink } from '@/components/terms-link';
 import type { Book, Shelf } from '@/db/repository';
+import { requestAppInstall } from '@/lib/install-app';
 
 export function PublicShelf({
   books,
@@ -37,7 +38,6 @@ export function PublicShelf({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [successCode, setSuccessCode] = useState('');
-  const { offerInstall } = useInstallApp();
 
   function toggle(bookId: string) {
     setError('');
@@ -74,7 +74,7 @@ export function PublicShelf({
             books.find((book) => book.id === bookId)?.availability === 'loan',
         )
       ) {
-        offerInstall('loan');
+        requestAppInstall('loan');
       }
     } catch (caught) {
       setError(

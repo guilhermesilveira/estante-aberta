@@ -12,9 +12,9 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 
-import { useInstallApp } from '@/components/install-app';
 import { Button } from '@/components/ui/button';
 import type { Book, Shelf } from '@/db/repository';
+import { requestAppInstall } from '@/lib/install-app';
 
 export function OwnerLibrary({
   initialBooks,
@@ -26,7 +26,6 @@ export function OwnerLibrary({
   const [books, setBooks] = useState(initialBooks);
   const [busy, setBusy] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
-  const { offerInstall } = useInstallApp();
 
   const publicPath = `/e/${shelf.slug}`;
   const publicUrl = useMemo(
@@ -40,7 +39,7 @@ export function OwnerLibrary({
   async function copyLink() {
     await navigator.clipboard.writeText(publicUrl);
     setCopied(true);
-    offerInstall('share');
+    requestAppInstall('share');
     window.setTimeout(() => setCopied(false), 1600);
   }
 
@@ -51,7 +50,7 @@ export function OwnerLibrary({
       '_blank',
       'noopener,noreferrer',
     );
-    offerInstall('share');
+    requestAppInstall('share');
   }
 
   async function patchBook(bookId: string, patch: Partial<Book>) {
