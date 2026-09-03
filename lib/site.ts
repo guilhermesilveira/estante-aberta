@@ -1,1 +1,1 @@
-export const SITE_ORIGIN = 'https://estante-aberta-livros.guilherme-silveira.chatgpt.site';
+export const SITE_ORIGIN = 'https://estanteaberta.matesia.com.br';
