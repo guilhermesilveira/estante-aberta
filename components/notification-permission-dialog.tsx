@@ -33,16 +33,35 @@ function supportsWebPush() {
   );
 }
 
+const copy = {
+  'new-requests': {
+    title: 'Quer receber aviso de novos pedidos?',
+    intro:
+      'Quando alguém pedir um ou mais livros, o navegador pode mostrar uma notificação no seu celular ou computador, mesmo com a Estante Aberta fechada.',
+    success: 'Você receberá um aviso quando chegar um novo pedido de livros.',
+  },
+  'request-updates': {
+    title: 'Quer receber a confirmação do pedido?',
+    intro:
+      'Quando a pessoa dona da estante confirmar quais livros vai entregar, o navegador pode avisar no seu celular ou computador, mesmo com a Estante Aberta fechada.',
+    success:
+      'Você receberá um aviso quando os livros do seu pedido forem confirmados.',
+  },
+} as const;
+
 export function NotificationPermissionDialog({
   completionLabel = 'Continuar cadastrando',
+  reason = 'new-requests',
   onComplete,
 }: {
   completionLabel?: string;
+  reason?: keyof typeof copy;
   onComplete: () => void;
 }) {
   const [step, setStep] = useState<PermissionStep>('intro');
   const [message, setMessage] = useState('');
   const primaryButton = useRef<HTMLButtonElement>(null);
+  const content = copy[reason];
 
   useEffect(() => {
     primaryButton.current?.focus();
@@ -154,7 +173,7 @@ export function NotificationPermissionDialog({
                 ? 'Notificações indisponíveis aqui'
                 : step === 'error'
                   ? 'Não foi possível ativar'
-                  : 'Quer receber aviso de novos pedidos?'}
+                  : content.title}
         </h2>
 
         <div
@@ -163,11 +182,7 @@ export function NotificationPermissionDialog({
         >
           {step === 'intro' && (
             <>
-              <p>
-                Quando alguém pedir um ou mais livros, o navegador pode mostrar
-                uma notificação no seu celular ou computador, mesmo com a
-                Estante Aberta fechada.
-              </p>
+              <p>{content.intro}</p>
               <p>
                 Ao continuar, o próprio navegador abrirá o pedido padrão de
                 autorização. Você pode negar e seguir usando o site normalmente.
@@ -175,11 +190,7 @@ export function NotificationPermissionDialog({
             </>
           )}
           {step === 'working' && <p>Aguardando a autorização do navegador…</p>}
-          {step === 'success' && (
-            <p>
-              Você receberá um aviso quando chegar um novo pedido de livros.
-            </p>
-          )}
+          {step === 'success' && <p>{content.success}</p>}
           {step === 'denied' && (
             <p>
               Tudo bem. O restante do site continua funcionando. Se mudar de

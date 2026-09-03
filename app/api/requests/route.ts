@@ -75,10 +75,10 @@ export async function POST(request: Request) {
     db
       .prepare(
         `INSERT INTO requests
-         (id, shelf_id, requester_name, status, created_at, updated_at)
-         VALUES (?, ?, ?, 'pending', ?, ?)`,
+         (id, shelf_id, requester_id, requester_name, status, created_at, updated_at)
+         VALUES (?, ?, ?, ?, 'pending', ?, ?)`,
       )
-      .bind(id, shelf.id, requesterName, now, now),
+      .bind(id, shelf.id, user.userId, requesterName, now, now),
     ...bookIds.map((bookId) =>
       db
         .prepare(
@@ -97,7 +97,7 @@ export async function POST(request: Request) {
   );
 
   return Response.json(
-    { code: id.replace(/-/g, '').slice(0, 6).toUpperCase() },
+    { id, code: id.replace(/-/g, '').slice(0, 6).toUpperCase() },
     { status: 201 },
   );
 }

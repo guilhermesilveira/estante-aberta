@@ -20,10 +20,37 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { HardLink } from '@/components/hard-link';
 import { InstallAppButton } from '@/components/install-app';
+import { NotificationPermissionDialog } from '@/components/notification-permission-dialog';
 import { TermsLink } from '@/components/terms-link';
 import type { Book } from '@/db/repository';
 import { requestAppInstall } from '@/lib/install-app';
 import type { PublicShelf as PublicShelfData } from '@/lib/public-shelf-data';
+
+async function hasNotificationSubscription() {
+  if (
+    !window.isSecureContext ||
+    !('Notification' in window) ||
+    Notification.permission !== 'granted' ||
+    !('serviceWorker' in navigator) ||
+    !('PushManager' in window)
+  ) {
+    return false;
+  }
+
+  try {
+    const registration = await navigator.serviceWorker.getRegistration('/');
+    const subscription = await registration?.pushManager.getSubscription();
+    if (!subscription) return false;
+    const response = await fetch('/api/push-subscriptions', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify(subscription.toJSON()),
+    });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
 
 export function PublicShelf({
   books,
@@ -39,6 +66,10 @@ export function PublicShelf({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [successCode, setSuccessCode] = useState('');
+  const [successRequestId, setSuccessRequestId] = useState('');
+  const [notificationPromptOpen, setNotificationPromptOpen] = useState(false);
+  const [installAfterNotification, setInstallAfterNotification] =
+    useState(false);
 
   function toggle(bookId: string) {
     if (books.find((book) => book.id === bookId)?.status !== 'available') {
@@ -67,17 +98,21 @@ export function PublicShelf({
       });
       const payload = (await response.json()) as {
         error?: string;
+        id?: string;
         code?: string;
       };
       if (!response.ok)
         throw new Error(payload.error || 'Não foi possível enviar.');
       setSuccessCode(payload.code ?? 'OK');
-      if (
-        selected.some(
-          (bookId) =>
-            books.find((book) => book.id === bookId)?.availability === 'loan',
-        )
-      ) {
+      setSuccessRequestId(payload.id ?? '');
+      const includesLoan = selected.some(
+        (bookId) =>
+          books.find((book) => book.id === bookId)?.availability === 'loan',
+      );
+      if (!(await hasNotificationSubscription())) {
+        setInstallAfterNotification(includesLoan);
+        setNotificationPromptOpen(true);
+      } else if (includesLoan) {
         requestAppInstall('loan');
       }
     } catch (caught) {
@@ -91,34 +126,57 @@ export function PublicShelf({
 
   if (successCode) {
     return (
-      <main className="grid min-h-screen place-items-center bg-[#f6f1e8] px-5 py-10">
-        <section className="w-full max-w-lg rounded-[32px] border bg-card p-7 text-center shadow-[0_24px_80px_rgb(44_43_37/12%)] sm:p-10">
-          <span className="mx-auto grid size-16 place-items-center rounded-full bg-[#e8f2ed] text-[#275b4b]">
-            <BookCheck className="size-8" />
-          </span>
-          <p className="mt-5 text-xs font-bold uppercase tracking-[0.12em] text-[#d35c41]">
-            Pedido {successCode}
-          </p>
-          <h1 className="mt-2 font-heading text-4xl font-bold leading-tight tracking-[-0.055em]">
-            Pedido efetuado.
-          </h1>
-          <p className="mx-auto mt-4 max-w-sm leading-7 text-muted-foreground">
-            Sua sacola de livros foi enviada. {shelf.ownerName} vai confirmar
-            quais livros poderá separar.
-          </p>
-          <p className="mx-auto mt-4 max-w-sm text-xs leading-5 text-muted-foreground">
-            A entrega acontece no local e no horário já combinados pelo grupo.
-          </p>
-          <TermsLink className="mt-3 inline-block text-sm text-foreground" />
-          <Button
-            className="mt-7 h-11 rounded-xl"
-            variant="outline"
-            onClick={() => window.location.reload()}
-          >
-            Voltar para a estante
-          </Button>
-        </section>
-      </main>
+      <>
+        <main className="grid min-h-screen place-items-center bg-[#f6f1e8] px-5 py-10">
+          <section className="w-full max-w-lg rounded-[32px] border bg-card p-7 text-center shadow-[0_24px_80px_rgb(44_43_37/12%)] sm:p-10">
+            <span className="mx-auto grid size-16 place-items-center rounded-full bg-[#e8f2ed] text-[#275b4b]">
+              <BookCheck className="size-8" />
+            </span>
+            <p className="mt-5 text-xs font-bold uppercase tracking-[0.12em] text-[#d35c41]">
+              Pedido {successCode}
+            </p>
+            <h1 className="mt-2 font-heading text-4xl font-bold leading-tight tracking-[-0.055em]">
+              Pedido efetuado.
+            </h1>
+            <p className="mx-auto mt-4 max-w-sm leading-7 text-muted-foreground">
+              Sua sacola de livros foi enviada. {shelf.ownerName} vai confirmar
+              quais livros poderá separar.
+            </p>
+            <p className="mx-auto mt-4 max-w-sm text-xs leading-5 text-muted-foreground">
+              A entrega acontece no local e no horário já combinados pelo grupo.
+            </p>
+            <TermsLink className="mt-3 inline-block text-sm text-foreground" />
+            <div className="mt-7 flex flex-col gap-2 sm:flex-row sm:justify-center">
+              {successRequestId && (
+                <a
+                  className="inline-flex h-11 items-center justify-center rounded-xl bg-primary px-4 text-sm font-medium text-primary-foreground"
+                  href={`/meus-pedidos/${successRequestId}`}
+                >
+                  Acompanhar pedido
+                </a>
+              )}
+              <Button
+                className="h-11 rounded-xl"
+                variant="outline"
+                onClick={() => window.location.reload()}
+              >
+                Voltar para a estante
+              </Button>
+            </div>
+          </section>
+        </main>
+        {notificationPromptOpen && (
+          <NotificationPermissionDialog
+            completionLabel="Continuar"
+            reason="request-updates"
+            onComplete={() => {
+              setNotificationPromptOpen(false);
+              if (installAfterNotification) requestAppInstall('loan');
+              setInstallAfterNotification(false);
+            }}
+          />
+        )}
+      </>
     );
   }
 

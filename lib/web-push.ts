@@ -1,6 +1,12 @@
 import { env } from 'cloudflare:workers';
 import webPush, { WebPushError } from 'web-push';
 
+import {
+  requestStatusNotification,
+  type PushNotificationPayload,
+  type RequestStatusNotificationInput,
+} from '@/lib/request-status-notification';
+
 type PushSubscriptionRow = {
   id: string;
   endpoint: string;
@@ -31,6 +37,46 @@ export async function sendNewRequestNotifications(
   notification: NewRequestNotification,
 ) {
   const runtime = getPushRuntime();
+  const owner = await runtime.DB.prepare(
+    'SELECT owner_id FROM shelves WHERE id = ? LIMIT 1',
+  )
+    .bind(shelfId)
+    .first<{ owner_id: string }>();
+  if (!owner) return;
+
+  const bookLabel =
+    notification.bookCount === 1
+      ? '1 livro'
+      : `${notification.bookCount} livros`;
+  await sendUserNotifications(
+    owner.owner_id,
+    {
+      title: 'Novo pedido na sua estante',
+      body: `${notification.requesterName} pediu ${bookLabel}.`,
+      tag: `pedido-${notification.requestId}`,
+      url: `/minha-estante#pedido-${notification.requestId}`,
+    },
+    `pedido-${notification.requestId}`,
+  );
+}
+
+export async function sendRequestStatusNotifications(
+  requesterId: string,
+  notification: RequestStatusNotificationInput,
+) {
+  await sendUserNotifications(
+    requesterId,
+    requestStatusNotification(notification),
+    `status-${notification.requestId}`,
+  );
+}
+
+async function sendUserNotifications(
+  userId: string,
+  notification: PushNotificationPayload,
+  topic: string,
+) {
+  const runtime = getPushRuntime();
   const publicKey = runtime.VAPID_PUBLIC_KEY?.trim();
   const privateKey = runtime.VAPID_PRIVATE_KEY?.trim();
   const subject = runtime.VAPID_SUBJECT?.trim();
@@ -42,22 +88,13 @@ export async function sendNewRequestNotifications(
   const subscriptions = await runtime.DB.prepare(
     `SELECT id, endpoint, p256dh, auth
      FROM push_subscriptions
-     WHERE shelf_id = ?`,
+     WHERE user_id = ?`,
   )
-    .bind(shelfId)
+    .bind(userId)
     .all<PushSubscriptionRow>();
   if (!subscriptions.results.length) return;
 
-  const bookLabel =
-    notification.bookCount === 1
-      ? '1 livro'
-      : `${notification.bookCount} livros`;
-  const payload = JSON.stringify({
-    title: 'Novo pedido na sua estante',
-    body: `${notification.requesterName} pediu ${bookLabel}.`,
-    tag: `pedido-${notification.requestId}`,
-    url: `/minha-estante#pedido-${notification.requestId}`,
-  });
+  const payload = JSON.stringify(notification);
 
   const expiredSubscriptionIds: string[] = [];
   await Promise.all(
@@ -75,7 +112,7 @@ export async function sendNewRequestNotifications(
           {
             TTL: 300,
             urgency: 'high',
-            topic: `pedido-${notification.requestId.replace(/-/g, '').slice(0, 20)}`,
+            topic: topic.replace(/-/g, '').slice(0, 32),
             vapidDetails: { subject, publicKey, privateKey },
           },
         );

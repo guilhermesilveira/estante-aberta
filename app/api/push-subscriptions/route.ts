@@ -2,7 +2,6 @@ import { getChatGPTUser } from '@/app/chatgpt-auth';
 import {
   ensureSchema,
   getOrCreateProfileName,
-  getOrCreateShelf,
   getRuntimeEnv,
 } from '@/db/repository';
 import { getVapidPublicKey } from '@/lib/web-push';
@@ -72,31 +71,20 @@ export async function POST(request: Request) {
   }
 
   await ensureSchema();
-  const shelf = await getOrCreateShelf(user, profileName);
   const db = getRuntimeEnv().DB;
   const now = Date.now();
   await db
     .prepare(
       `INSERT INTO push_subscriptions
-       (id, shelf_id, owner_id, endpoint, p256dh, auth, created_at, updated_at)
-       VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+       (id, user_id, endpoint, p256dh, auth, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?, ?)
        ON CONFLICT(endpoint) DO UPDATE SET
-         shelf_id = excluded.shelf_id,
-         owner_id = excluded.owner_id,
+         user_id = excluded.user_id,
          p256dh = excluded.p256dh,
          auth = excluded.auth,
          updated_at = excluded.updated_at`,
     )
-    .bind(
-      crypto.randomUUID(),
-      shelf.id,
-      user.userId,
-      endpoint,
-      p256dh,
-      auth,
-      now,
-      now,
-    )
+    .bind(crypto.randomUUID(), user.userId, endpoint, p256dh, auth, now, now)
     .run();
 
   return Response.json({ ok: true }, { status: 201 });

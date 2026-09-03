@@ -1,5 +1,8 @@
+import { waitUntil } from 'cloudflare:workers';
+
 import { getChatGPTUser } from '@/app/chatgpt-auth';
 import { ensureSchema, getRuntimeEnv } from '@/db/repository';
+import { sendRequestStatusNotifications } from '@/lib/web-push';
 
 const validStatuses = new Set(['accepted', 'declined', 'completed']);
 
@@ -29,12 +32,12 @@ export async function PATCH(
   const db = getRuntimeEnv().DB;
   const ownerRequest = await db
     .prepare(
-      `SELECT requests.id, requests.status
+      `SELECT requests.id, requests.status, requests.requester_id
        FROM requests JOIN shelves ON shelves.id = requests.shelf_id
        WHERE requests.id = ? AND shelves.owner_id = ? LIMIT 1`,
     )
     .bind(id, user.userId)
-    .first<{ id: string; status: string }>();
+    .first<{ id: string; status: string; requester_id: string | null }>();
   if (!ownerRequest)
     return Response.json({ error: 'Pedido não encontrado.' }, { status: 404 });
 
@@ -73,11 +76,28 @@ export async function PATCH(
   }
 
   const now = Date.now();
-  const statements: D1PreparedStatement[] = [
-    db
-      .prepare('UPDATE requests SET status = ?, updated_at = ? WHERE id = ?')
-      .bind(status, now, id),
-  ];
+  const confirmedCount = status === 'accepted' ? requestedBookIds.length : 0;
+  const unavailableCount =
+    status === 'accepted'
+      ? linkedBooks.results.length - requestedBookIds.length
+      : status === 'declined'
+        ? linkedBooks.results.length
+        : 0;
+  const statusStatement =
+    status === 'accepted' || status === 'declined'
+      ? db
+          .prepare(
+            `UPDATE requests
+             SET status = ?, confirmed_count = ?, unavailable_count = ?, updated_at = ?
+             WHERE id = ?`,
+          )
+          .bind(status, confirmedCount, unavailableCount, now, id)
+      : db
+          .prepare(
+            'UPDATE requests SET status = ?, updated_at = ? WHERE id = ?',
+          )
+          .bind(status, now, id);
+  const statements: D1PreparedStatement[] = [statusStatement];
 
   if (status === 'accepted') {
     linkedBooks.results.forEach((book) => {
@@ -121,5 +141,19 @@ export async function PATCH(
   }
 
   await db.batch(statements);
+  if (
+    ownerRequest.status === 'pending' &&
+    (status === 'accepted' || status === 'declined') &&
+    ownerRequest.requester_id
+  ) {
+    waitUntil(
+      sendRequestStatusNotifications(ownerRequest.requester_id, {
+        requestId: id,
+        status,
+        confirmedCount,
+        unavailableCount,
+      }),
+    );
+  }
   return Response.json({ ok: true });
 }

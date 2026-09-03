@@ -41,6 +41,20 @@ export type BookRequest = {
   }>;
 };
 
+export type RequesterRequest = {
+  id: string;
+  status: BookRequest['status'];
+  createdAt: number;
+  confirmedCount: number;
+  unavailableCount: number;
+  shelf: {
+    name: string;
+    slug: string;
+    ownerName: string;
+  };
+  books: BookRequest['books'];
+};
+
 export type StoredPhoto = {
   id: string;
   storageKey: string;
@@ -303,6 +317,58 @@ export async function getOwnerRequests(
     });
   }
   return results;
+}
+
+export async function getRequesterRequest(
+  requestId: string,
+  requesterId: string,
+): Promise<RequesterRequest | null> {
+  await ensureSchema();
+  const db = getRuntimeEnv().DB;
+  const row = await db
+    .prepare(
+      `SELECT requests.id, requests.status, requests.created_at,
+              requests.confirmed_count, requests.unavailable_count,
+              shelves.name AS shelf_name, shelves.slug AS shelf_slug,
+              shelves.owner_name
+       FROM requests JOIN shelves ON shelves.id = requests.shelf_id
+       WHERE requests.id = ? AND requests.requester_id = ? LIMIT 1`,
+    )
+    .bind(requestId, requesterId)
+    .first<Record<string, unknown>>();
+  if (!row) return null;
+
+  const bookRows = await db
+    .prepare(
+      `SELECT books.id, books.photo_batch_id, books.availability, books.status
+       FROM request_books JOIN books ON books.id = request_books.book_id
+       WHERE request_books.request_id = ? ORDER BY books.title`,
+    )
+    .bind(requestId)
+    .all<Record<string, unknown>>();
+
+  return {
+    id: String(row.id),
+    status: String(row.status) as RequesterRequest['status'],
+    createdAt: Number(row.created_at),
+    confirmedCount: Number(row.confirmed_count),
+    unavailableCount: Number(row.unavailable_count),
+    shelf: {
+      name: String(row.shelf_name),
+      slug: String(row.shelf_slug),
+      ownerName: String(row.owner_name),
+    },
+    books: bookRows.results.map((book) => ({
+      id: String(book.id),
+      photoBatchId:
+        book.status !== 'given' &&
+        book.status !== 'removed' &&
+        typeof book.photo_batch_id === 'string'
+          ? book.photo_batch_id
+          : null,
+      availability: book.availability === 'donation' ? 'donation' : 'loan',
+    })),
+  };
 }
 
 export async function getPublicShelf(

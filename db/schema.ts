@@ -89,13 +89,17 @@ export const requests = sqliteTable(
     shelfId: text('shelf_id')
       .notNull()
       .references(() => shelves.id, { onDelete: 'cascade' }),
+    requesterId: text('requester_id'),
     requesterName: text('requester_name').notNull(),
     status: text('status').notNull().default('pending'),
+    confirmedCount: integer('confirmed_count').notNull().default(0),
+    unavailableCount: integer('unavailable_count').notNull().default(0),
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at').notNull(),
   },
   (table) => [
     index('idx_requests_shelf_status').on(table.shelfId, table.status),
+    index('idx_requests_requester_id').on(table.requesterId),
   ],
 );
 
@@ -119,10 +123,7 @@ export const pushSubscriptions = sqliteTable(
   'push_subscriptions',
   {
     id: text('id').primaryKey(),
-    shelfId: text('shelf_id')
-      .notNull()
-      .references(() => shelves.id, { onDelete: 'cascade' }),
-    ownerId: text('owner_id').notNull(),
+    userId: text('user_id').notNull(),
     endpoint: text('endpoint').notNull(),
     p256dh: text('p256dh').notNull(),
     auth: text('auth').notNull(),
@@ -131,7 +132,6 @@ export const pushSubscriptions = sqliteTable(
   },
   (table) => [
     uniqueIndex('idx_push_subscriptions_endpoint').on(table.endpoint),
-    index('idx_push_subscriptions_shelf_id').on(table.shelfId),
-    index('idx_push_subscriptions_owner_id').on(table.ownerId),
+    index('idx_push_subscriptions_user_id').on(table.userId),
   ],
 );
