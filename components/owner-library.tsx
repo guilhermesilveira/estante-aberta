@@ -118,8 +118,9 @@ export function OwnerLibrary({
         </div>
         <p className="mt-5 flex max-w-3xl items-start gap-2 border-t border-white/15 pt-4 text-xs leading-5 text-white/65">
           <ShieldAlert className="mt-0.5 size-4 shrink-0" />
-          A Estante Aberta mostra o nome informado pela conta, mas não confirma
-          que uma pessoa é quem diz ser.
+          Use esta estante com pessoas que você já conhece. Em cada pedido, você
+          verá somente o nome da conta da pessoa. Entregue os livros no local e
+          no horário combinados pelo grupo.
         </p>
       </section>
 

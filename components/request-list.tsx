@@ -6,7 +6,6 @@ import {
   Check,
   Clock3,
   LoaderCircle,
-  MessageCircle,
   PackageCheck,
   ShieldAlert,
   X,
@@ -14,7 +13,7 @@ import {
 import Image from 'next/image';
 
 import { Badge } from '@/components/ui/badge';
-import { Button, buttonVariants } from '@/components/ui/button';
+import { Button } from '@/components/ui/button';
 import type { BookRequest } from '@/db/repository';
 
 const statusLabel: Record<BookRequest['status'], string> = {
@@ -115,8 +114,9 @@ export function RequestList({
     <div className="space-y-3">
       <p className="flex items-start gap-2 rounded-2xl bg-[#fff7dd] px-4 py-3 text-xs leading-5 text-[#6d561a]">
         <ShieldAlert className="mt-0.5 size-4 shrink-0" />
-        O nome vem da conta, mas a Estante Aberta não confirma que uma pessoa é
-        quem diz ser. Combine a entrega com cuidado.
+        Você verá somente o nome da conta que fez o pedido. Use esta estante com
+        pessoas que já conhece e entregue os livros no local e no horário
+        combinados pelo grupo.
       </p>
       {requests.map((request) => {
         const selected = selectedByRequest[request.id] ?? [];
@@ -128,6 +128,9 @@ export function RequestList({
           >
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div>
+                <p className="text-xs text-muted-foreground">
+                  Pedido feito por
+                </p>
                 <div className="flex items-center gap-2">
                   <h3 className="font-heading text-xl font-bold tracking-[-0.03em]">
                     {request.requesterName}
@@ -140,11 +143,6 @@ export function RequestList({
                     {statusLabel[request.status]}
                   </Badge>
                 </div>
-                {request.requesterContact && (
-                  <p className="mt-1 text-sm text-muted-foreground">
-                    {request.requesterContact}
-                  </p>
-                )}
               </div>
               <span className="text-xs text-muted-foreground">
                 {new Intl.DateTimeFormat('pt-BR', {
@@ -205,25 +203,6 @@ export function RequestList({
                 );
               })}
             </div>
-            {request.note && (
-              <p className="mt-4 border-l-2 border-[#f0be46] pl-3 text-sm italic text-muted-foreground">
-                {request.note}
-              </p>
-            )}
-            {request.requesterContact && (
-              <a
-                className={buttonVariants({
-                  variant: 'ghost',
-                  size: 'sm',
-                  className: 'mt-3 h-9 rounded-xl',
-                })}
-                href={`https://wa.me/${request.requesterContact.replace(/\D/g, '')}`}
-                target="_blank"
-                rel="noreferrer"
-              >
-                <MessageCircle /> Conversar no WhatsApp
-              </a>
-            )}
             {request.status === 'pending' && (
               <div className="mt-4 flex flex-wrap gap-2">
                 <Button

@@ -27,8 +27,6 @@ export type Book = {
 export type BookRequest = {
   id: string;
   requesterName: string;
-  requesterContact: string;
-  note: string;
   status: 'pending' | 'accepted' | 'declined' | 'completed';
   createdAt: number;
   books: Array<{
@@ -92,8 +90,6 @@ const schemaStatements = [
     id TEXT PRIMARY KEY NOT NULL,
     shelf_id TEXT NOT NULL REFERENCES shelves(id) ON DELETE CASCADE,
     requester_name TEXT NOT NULL,
-    requester_contact TEXT NOT NULL DEFAULT '',
-    note TEXT NOT NULL DEFAULT '',
     status TEXT NOT NULL DEFAULT 'pending',
     created_at INTEGER NOT NULL,
     updated_at INTEGER NOT NULL
@@ -255,8 +251,6 @@ export async function getOwnerRequests(
     results.push({
       id: String(row.id),
       requesterName: String(row.requester_name),
-      requesterContact: optionalText(row.requester_contact),
-      note: optionalText(row.note),
       status: String(row.status) as BookRequest['status'],
       createdAt: Number(row.created_at),
       books: bookRows.results.map((book) => ({

@@ -83,8 +83,6 @@ export const requests = sqliteTable(
       .notNull()
       .references(() => shelves.id, { onDelete: 'cascade' }),
     requesterName: text('requester_name').notNull(),
-    requesterContact: text('requester_contact').notNull().default(''),
-    note: text('note').notNull().default(''),
     status: text('status').notNull().default('pending'),
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at').notNull(),

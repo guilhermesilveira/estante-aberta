@@ -19,8 +19,6 @@ import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { HardLink } from '@/components/hard-link';
-import { Input } from '@/components/ui/input';
-import { Textarea } from '@/components/ui/textarea';
 import type { Book, Shelf } from '@/db/repository';
 
 export function PublicShelf({
@@ -33,9 +31,7 @@ export function PublicShelf({
   viewerName: string;
 }) {
   const [selected, setSelected] = useState<string[]>([]);
-  const [showForm, setShowForm] = useState(false);
-  const [contact, setContact] = useState('');
-  const [note, setNote] = useState('');
+  const [showConfirmation, setShowConfirmation] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [successCode, setSuccessCode] = useState('');
@@ -60,8 +56,6 @@ export function PublicShelf({
         body: JSON.stringify({
           slug: shelf.slug,
           bookIds: selected,
-          requesterContact: contact,
-          note,
         }),
       });
       const payload = (await response.json()) as {
@@ -98,8 +92,7 @@ export function PublicShelf({
             quais livros poderá separar.
           </p>
           <p className="mx-auto mt-4 max-w-sm text-xs leading-5 text-muted-foreground">
-            A Estante Aberta não confirma que uma pessoa é quem diz ser. Combine
-            a entrega com cuidado.
+            A entrega acontece no local e no horário já combinados pelo grupo.
           </p>
           <Button
             className="mt-7 h-11 rounded-xl"
@@ -113,7 +106,7 @@ export function PublicShelf({
     );
   }
 
-  if (showForm) {
+  if (showConfirmation) {
     const chosenBooks = books.filter((book) => selected.includes(book.id));
     return (
       <main className="min-h-screen bg-[#f6f1e8] px-5 py-6 sm:py-10">
@@ -121,7 +114,7 @@ export function PublicShelf({
           <Button
             className="-ml-2"
             variant="ghost"
-            onClick={() => setShowForm(false)}
+            onClick={() => setShowConfirmation(false)}
           >
             <ArrowLeft /> Voltar aos livros
           </Button>
@@ -129,11 +122,12 @@ export function PublicShelf({
             Pedir livros
           </p>
           <h1 className="mt-1 font-heading text-4xl font-bold tracking-[-0.055em]">
-            Complete se quiser
+            Confirme o pedido
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
             O pedido será enviado em nome de{' '}
-            <strong className="text-foreground">{viewerName}</strong>.
+            <strong className="text-foreground">{viewerName}</strong>. Esse nome
+            vem da sua conta e não pode ser alterado aqui.
           </p>
           <div className="mt-5 grid grid-cols-3 gap-2 sm:grid-cols-5">
             {chosenBooks.map((book, index) => (
@@ -165,46 +159,11 @@ export function PublicShelf({
             ))}
           </div>
           <form className="mt-6 space-y-4" onSubmit={submitRequest}>
-            <label
-              className="block text-sm font-semibold"
-              htmlFor="requester-contact"
-            >
-              WhatsApp{' '}
-              <span className="font-normal text-muted-foreground">
-                (opcional)
-              </span>
-              <Input
-                id="requester-contact"
-                className="mt-1 h-12 rounded-xl bg-background"
-                autoComplete="tel"
-                inputMode="tel"
-                value={contact}
-                onChange={(event) => setContact(event.target.value)}
-                placeholder="Para a pessoa combinar a entrega com você"
-                maxLength={40}
-              />
-            </label>
-            <label
-              className="block text-sm font-semibold"
-              htmlFor="request-note"
-            >
-              Mensagem{' '}
-              <span className="font-normal text-muted-foreground">
-                (opcional)
-              </span>
-              <Textarea
-                id="request-note"
-                className="mt-1 min-h-28 rounded-xl bg-background"
-                value={note}
-                onChange={(event) => setNote(event.target.value)}
-                placeholder="Diga algo a mais que pode ajudar o dono/a a separar os livros para você"
-                maxLength={400}
-              />
-            </label>
             <p className="flex items-start gap-2 rounded-xl bg-[#fff7dd] px-4 py-3 text-xs leading-5 text-[#6d561a]">
               <ShieldAlert className="mt-0.5 size-4 shrink-0" />
-              A Estante Aberta usa o nome informado pela conta, mas não confirma
-              que uma pessoa é quem diz ser.
+              Use esta estante apenas para trocas entre pessoas que você já
+              conhece. A entrega acontece no local e no horário já combinados
+              pelo grupo.
             </p>
             {error && (
               <p
@@ -220,7 +179,7 @@ export function PublicShelf({
               disabled={busy || !selected.length}
             >
               {busy ? <LoaderCircle className="animate-spin" /> : <Send />}{' '}
-              {busy ? 'Enviando…' : 'Efetuar pedido'}
+              {busy ? 'Enviando…' : 'Confirmar pedido'}
             </Button>
             <p className="text-center text-xs leading-5 text-muted-foreground">
               A pessoa dona da estante ainda escolherá quais livros consegue
@@ -256,8 +215,8 @@ export function PublicShelf({
             </p>
             <p className="mt-5 flex max-w-xl items-start gap-2 text-xs leading-5 text-white/60">
               <ShieldAlert className="mt-0.5 size-4 shrink-0" />
-              A Estante Aberta não confirma que uma pessoa é quem diz ser.
-              Combine qualquer entrega com cuidado.
+              Esta estante é para pessoas que já se conhecem. A entrega acontece
+              no local e no horário combinados pelo grupo.
             </p>
           </div>
         </div>
@@ -362,7 +321,7 @@ export function PublicShelf({
             </div>
             <Button
               className="h-12 rounded-2xl px-5 text-base"
-              onClick={() => setShowForm(true)}
+              onClick={() => setShowConfirmation(true)}
             >
               Pedir <Send />
             </Button>

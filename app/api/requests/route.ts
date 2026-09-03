@@ -13,12 +13,6 @@ export async function POST(request: Request) {
     );
   const body = (await request.json()) as Record<string, unknown>;
   const slug = typeof body.slug === 'string' ? body.slug.trim() : '';
-  const requesterContact =
-    typeof body.requesterContact === 'string'
-      ? body.requesterContact.trim().slice(0, 120)
-      : '';
-  const note =
-    typeof body.note === 'string' ? body.note.trim().slice(0, 400) : '';
   const bookIds = Array.isArray(body.bookIds)
     ? [
         ...new Set(
@@ -70,18 +64,10 @@ export async function POST(request: Request) {
     db
       .prepare(
         `INSERT INTO requests
-         (id, shelf_id, requester_name, requester_contact, note, status, created_at, updated_at)
-         VALUES (?, ?, ?, ?, ?, 'pending', ?, ?)`,
+         (id, shelf_id, requester_name, status, created_at, updated_at)
+         VALUES (?, ?, ?, 'pending', ?, ?)`,
       )
-      .bind(
-        id,
-        shelf.id,
-        user.displayName.slice(0, 80),
-        requesterContact,
-        note,
-        now,
-        now,
-      ),
+      .bind(id, shelf.id, user.displayName.slice(0, 80), now, now),
     ...bookIds.map((bookId) =>
       db
         .prepare(
