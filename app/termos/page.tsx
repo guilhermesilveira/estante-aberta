@@ -70,8 +70,8 @@ const sections = [
 
 export default function TermsPage() {
   return (
-    <main className="min-h-screen bg-[#f6f1e8] text-foreground">
-      <header className="overflow-hidden bg-[#183d33] px-5 pb-12 pt-6 text-white sm:pb-16 sm:pt-8">
+    <main className="min-h-dvh bg-[#f6f1e8] text-foreground">
+      <header className="overflow-hidden bg-[#183d33] px-4 pb-10 pt-5 text-white sm:px-5 sm:pb-16 sm:pt-8">
         <div className="mx-auto max-w-4xl">
           <HardLink
             className="inline-flex items-center gap-2 text-sm font-semibold text-white/75 transition hover:text-white"
@@ -79,26 +79,26 @@ export default function TermsPage() {
           >
             <ArrowLeft className="size-4" /> Voltar para a Estante Aberta
           </HardLink>
-          <div className="mt-10 max-w-3xl">
+          <div className="mt-8 max-w-3xl sm:mt-10">
             <p className="text-sm font-bold uppercase tracking-[0.14em] text-[#f0be46]">
               Termos de uso e segurança
             </p>
-            <h1 className="mt-3 font-heading text-[clamp(2.7rem,9vw,5.2rem)] font-bold leading-[0.95] tracking-[-0.065em] text-balance">
+            <h1 className="mt-3 font-heading text-[2.45rem] font-bold leading-[0.97] tracking-[-0.055em] text-balance sm:text-[4rem] lg:text-[5.2rem]">
               Trocas seguras começam dentro do grupo.
             </h1>
-            <p className="mt-5 max-w-2xl text-lg leading-8 text-white/75">
+            <p className="mt-4 max-w-2xl text-base leading-7 text-white/75 sm:mt-5 sm:text-lg sm:leading-8">
               Leia estas regras antes de disponibilizar ou pedir um livro.
             </p>
           </div>
         </div>
       </header>
 
-      <article className="mx-auto w-full max-w-4xl px-5 pb-16 sm:pb-24">
-        <section className="-mt-6 rounded-[28px] border border-[#d59b19]/35 bg-[#fff7dd] p-5 shadow-[0_18px_50px_rgb(44_43_37/10%)] sm:-mt-8 sm:p-7">
+      <article className="mx-auto w-full max-w-4xl px-4 pb-14 sm:px-5 sm:pb-24">
+        <section className="-mt-5 rounded-[22px] border border-[#d59b19]/35 bg-[#fff7dd] p-4 shadow-[0_18px_50px_rgb(44_43_37/10%)] sm:-mt-8 sm:rounded-[28px] sm:p-7">
           <p className="text-sm font-bold uppercase tracking-[0.12em] text-[#8a6415]">
             Regra principal
           </p>
-          <p className="mt-3 text-lg font-semibold leading-8 text-[#4f421f] sm:text-xl">
+          <p className="mt-3 text-base font-semibold leading-7 text-[#4f421f] sm:text-xl sm:leading-8">
             Use somente com pessoas que você conhece. O grupo deve ter um único
             local de troca, definido antes dos pedidos. Não use a plataforma
             para conhecer ou encontrar desconhecidos.
@@ -108,15 +108,15 @@ export default function TermsPage() {
         <div className="mt-8 space-y-4 sm:mt-10">
           {sections.map(({ icon: Icon, title, paragraphs }) => (
             <section
-              className="rounded-[24px] border bg-card p-5 shadow-[0_10px_32px_rgb(44_43_37/6%)] sm:p-7"
+              className="rounded-[22px] border bg-card p-4 shadow-[0_10px_32px_rgb(44_43_37/6%)] sm:rounded-[24px] sm:p-7"
               key={title}
             >
-              <div className="flex items-start gap-3">
+              <div className="flex flex-col items-start gap-3 sm:flex-row">
                 <span className="grid size-10 shrink-0 place-items-center rounded-2xl bg-[#e8f2ed] text-[#275b4b]">
                   <Icon className="size-5" />
                 </span>
                 <div>
-                  <h2 className="font-heading text-2xl font-bold tracking-[-0.035em]">
+                  <h2 className="font-heading text-[1.4rem] font-bold leading-tight tracking-[-0.035em] sm:text-2xl">
                     {title}
                   </h2>
                   <div className="mt-3 space-y-3 text-base leading-7 text-muted-foreground">

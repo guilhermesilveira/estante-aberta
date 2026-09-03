@@ -101,7 +101,7 @@ export function RequestList({
 
   if (!requests.length) {
     return (
-      <div className="rounded-[24px] border border-dashed bg-card p-7 text-center">
+      <div className="rounded-[22px] border border-dashed bg-card p-6 text-center sm:rounded-[24px] sm:p-7">
         <Clock3 className="mx-auto size-7 text-muted-foreground" />
         <p className="mt-3 font-semibold">Os pedidos vão aparecer aqui</p>
         <p className="mt-1 text-sm text-muted-foreground">
@@ -126,7 +126,7 @@ export function RequestList({
         const selected = selectedByRequest[request.id] ?? [];
         return (
           <article
-            className="scroll-mt-5 rounded-[24px] border bg-card p-5 shadow-[0_10px_30px_rgb(44_43_37/6%)] target:border-[#387c67] target:ring-4 target:ring-[#387c67]/20"
+            className="scroll-mt-20 rounded-[22px] border bg-card p-4 shadow-[0_10px_30px_rgb(44_43_37/6%)] target:border-[#387c67] target:ring-4 target:ring-[#387c67]/20 sm:scroll-mt-5 sm:rounded-[24px] sm:p-5"
             id={`pedido-${request.id}`}
             key={request.id}
           >
@@ -135,8 +135,8 @@ export function RequestList({
                 <p className="text-xs text-muted-foreground">
                   Pedido feito por
                 </p>
-                <div className="flex items-center gap-2">
-                  <h3 className="font-heading text-xl font-bold tracking-[-0.03em]">
+                <div className="flex flex-wrap items-center gap-2">
+                  <h3 className="font-heading text-lg font-bold tracking-[-0.03em] sm:text-xl">
                     {request.requesterName}
                   </h3>
                   <Badge
@@ -156,10 +156,10 @@ export function RequestList({
                 }).format(new Date(request.createdAt))}
               </span>
             </div>
-            <div className="mt-4 flex flex-wrap gap-2">
+            <div className="mt-4 flex flex-wrap gap-2.5">
               {request.books.map((book, index) => {
                 const isSelected = selected.includes(book.id);
-                const className = `relative size-16 overflow-hidden rounded-xl border-2 bg-[#e8dfcd] transition ${request.status === 'pending' ? 'cursor-pointer hover:-translate-y-0.5' : ''} ${isSelected && request.status === 'pending' ? 'border-[#387c67] ring-2 ring-[#387c67]/25' : 'border-transparent'}`;
+                const className = `relative size-[4.25rem] overflow-hidden rounded-xl border-2 bg-[#e8dfcd] transition ${request.status === 'pending' ? 'cursor-pointer hover:-translate-y-0.5' : ''} ${isSelected && request.status === 'pending' ? 'border-[#387c67] ring-2 ring-[#387c67]/25' : 'border-transparent'}`;
                 const contents = (
                   <>
                     {book.photoBatchId ? (
@@ -208,9 +208,9 @@ export function RequestList({
               })}
             </div>
             {request.status === 'pending' && (
-              <div className="mt-4 flex flex-wrap gap-2">
+              <div className="mt-4 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                 <Button
-                  className="h-9 rounded-xl"
+                  className="h-11 rounded-xl sm:h-9"
                   size="sm"
                   disabled={busy === request.id || selected.length === 0}
                   onClick={() => updateStatus(request.id, 'accepted', selected)}
@@ -223,7 +223,7 @@ export function RequestList({
                   Confirmar {selected.length}
                 </Button>
                 <Button
-                  className="h-9 rounded-xl"
+                  className="h-11 rounded-xl sm:h-9"
                   size="sm"
                   variant="outline"
                   disabled={busy === request.id}
@@ -249,7 +249,7 @@ export function RequestList({
             )}
             {request.status === 'accepted' && (
               <Button
-                className="mt-4 h-9 rounded-xl"
+                className="mt-4 h-11 w-full rounded-xl sm:h-9 sm:w-auto"
                 size="sm"
                 variant="outline"
                 disabled={busy === request.id}

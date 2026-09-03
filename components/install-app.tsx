@@ -176,7 +176,7 @@ export function InstallAppProvider({
       {children}
       {open && (
         <div
-          className="fixed inset-0 z-[130] grid place-items-end bg-[#10261f]/70 p-3 backdrop-blur-sm sm:place-items-center sm:p-6"
+          className="fixed inset-0 z-[130] grid place-items-end bg-[#10261f]/70 pt-3 backdrop-blur-sm sm:place-items-center sm:p-6"
           role="presentation"
         >
           <dialog
@@ -184,7 +184,7 @@ export function InstallAppProvider({
             aria-describedby="install-app-description"
             aria-labelledby="install-app-title"
             aria-modal="true"
-            className="relative m-0 w-full max-w-lg rounded-[28px] border-0 bg-card p-5 text-foreground shadow-[0_28px_90px_rgb(10_30_24/35%)] sm:p-7"
+            className="relative m-0 max-h-[calc(100dvh-0.75rem)] w-full max-w-lg overflow-y-auto rounded-t-[28px] border-0 bg-card px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-5 text-foreground shadow-[0_28px_90px_rgb(10_30_24/35%)] sm:max-h-[calc(100dvh-3rem)] sm:rounded-[28px] sm:p-7"
           >
             <span className="grid size-12 place-items-center rounded-2xl bg-[#e8f2ed] text-[#275b4b]">
               {step === 'instructions' ? (
@@ -199,7 +199,7 @@ export function InstallAppProvider({
             </span>
 
             <h2
-              className="mt-4 font-heading text-3xl font-bold tracking-[-0.045em]"
+              className="mt-4 font-heading text-[1.75rem] font-bold leading-tight tracking-[-0.045em] sm:text-3xl"
               id="install-app-title"
             >
               {step === 'instructions'
@@ -208,7 +208,7 @@ export function InstallAppProvider({
             </h2>
 
             <div
-              className="mt-3 space-y-3 text-base leading-7 text-muted-foreground"
+              className="mt-3 space-y-3 text-[0.95rem] leading-6 text-muted-foreground sm:text-base sm:leading-7"
               id="install-app-description"
             >
               {step === 'intro' && (
@@ -250,7 +250,7 @@ export function InstallAppProvider({
             <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
               {step === 'intro' && (
                 <Button
-                  className="h-12 rounded-2xl"
+                  className="h-12 w-full rounded-2xl sm:w-auto"
                   variant="ghost"
                   onClick={() => setOpen(false)}
                 >
@@ -260,21 +260,24 @@ export function InstallAppProvider({
               {step === 'intro' && (
                 <Button
                   ref={primaryButton}
-                  className="h-12 rounded-2xl px-5"
+                  className="h-12 w-full rounded-2xl px-5 sm:w-auto"
                   onClick={install}
                 >
                   <Download /> Instalar aplicativo
                 </Button>
               )}
               {step === 'working' && (
-                <Button className="h-12 rounded-2xl px-5" disabled>
+                <Button
+                  className="h-12 w-full rounded-2xl px-5 sm:w-auto"
+                  disabled
+                >
                   <LoaderCircle className="animate-spin" /> Aguardando…
                 </Button>
               )}
               {step === 'instructions' && (
                 <Button
                   ref={primaryButton}
-                  className="h-12 rounded-2xl px-5"
+                  className="h-12 w-full rounded-2xl px-5 sm:w-auto"
                   onClick={() => setOpen(false)}
                 >
                   <Check /> Entendi
@@ -320,7 +323,9 @@ export function InstallAppButton({
       variant="outline"
       onClick={() => requestAppInstall('manual')}
     >
-      <Download /> Instalar no celular
+      <Download className="size-4" />
+      <span className="sm:hidden">Instalar</span>
+      <span className="hidden sm:inline">Instalar no celular</span>
     </Button>
   );
 }

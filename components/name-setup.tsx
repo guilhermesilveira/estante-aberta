@@ -38,19 +38,19 @@ export function NameSetup({ returnTo }: { returnTo: string }) {
   }
 
   return (
-    <main className="grid min-h-screen place-items-center bg-[#f6f1e8] px-5 py-10">
-      <section className="w-full max-w-md rounded-[30px] border bg-card p-6 shadow-[0_24px_80px_rgb(44_43_37/12%)] sm:p-8">
+    <main className="grid min-h-dvh items-start bg-[#f6f1e8] px-4 py-4 sm:place-items-center sm:px-5 sm:py-10">
+      <section className="w-full max-w-md rounded-[24px] border bg-card p-5 shadow-[0_24px_80px_rgb(44_43_37/12%)] sm:rounded-[30px] sm:p-8">
         <span className="grid size-12 place-items-center rounded-2xl bg-[#e8f2ed] text-[#275b4b]">
           <UserRound className="size-6" />
         </span>
-        <h1 className="mt-5 font-heading text-4xl font-bold tracking-[-0.055em]">
+        <h1 className="mt-4 font-heading text-[2rem] font-bold leading-tight tracking-[-0.05em] sm:mt-5 sm:text-4xl">
           Como podemos chamar você?
         </h1>
         <p className="mt-3 leading-7 text-muted-foreground">
           Use um nome ou nome e sobrenome. Ele aparecerá nos pedidos e na sua
           estante.
         </p>
-        <form className="mt-6" onSubmit={saveName}>
+        <form className="mt-5 sm:mt-6" onSubmit={saveName}>
           <label className="block text-sm font-semibold" htmlFor="profile-name">
             Nome
             <Input

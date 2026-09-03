@@ -9,7 +9,7 @@ import {
   Handshake,
   LoaderCircle,
   RotateCcw,
-  Square,
+  X,
 } from 'lucide-react';
 import Image from 'next/image';
 
@@ -224,12 +224,12 @@ export function BookUploader({
   }
 
   return (
-    <section className="rounded-[28px] border border-[#275b4b]/15 bg-card p-4 shadow-[0_18px_55px_rgb(44_43_37/8%)] sm:p-6">
+    <section className="rounded-[22px] border border-[#275b4b]/15 bg-card p-4 shadow-[0_18px_55px_rgb(44_43_37/8%)] sm:rounded-[28px] sm:p-6">
       <div>
         <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#d35c41]">
           Adicionar livro
         </p>
-        <h2 className="mt-1 font-heading text-2xl font-bold tracking-[-0.04em]">
+        <h2 className="mt-1 font-heading text-[1.4rem] font-bold leading-tight tracking-[-0.04em] sm:text-2xl">
           {phase === 'preview' || phase === 'saving'
             ? 'O que você quer fazer com este livro?'
             : 'Tire uma foto do livro'}
@@ -251,20 +251,23 @@ export function BookUploader({
       )}
 
       {phase === 'pick' && (
-        <div className="mt-5 grid gap-3 sm:grid-cols-2">
-          <Button className="h-24 rounded-2xl text-base" onClick={openCamera}>
-            <Camera className="size-6" /> Abrir câmera
+        <div className="mt-5 grid grid-cols-2 gap-2.5 sm:gap-3">
+          <Button
+            className="h-16 rounded-2xl text-sm sm:h-24 sm:text-base"
+            onClick={openCamera}
+          >
+            <Camera className="size-5 sm:size-6" /> Abrir câmera
           </Button>
           <Button
-            className="h-24 rounded-2xl text-base"
+            className="h-16 rounded-2xl text-sm sm:h-24 sm:text-base"
             variant="outline"
             onClick={() => fileInput.current?.click()}
           >
-            <FileUp className="size-6" /> Enviar arquivo
+            <FileUp className="size-5 sm:size-6" /> Enviar arquivo
           </Button>
           <Input
             ref={fileInput}
-            className="sr-only"
+            className="hidden"
             type="file"
             accept="image/jpeg,image/png,image/webp,image/gif"
             onChange={(event) => {
@@ -273,13 +276,15 @@ export function BookUploader({
               event.target.value = '';
             }}
           />
-          <Button
-            className="sm:col-span-2"
-            variant="ghost"
-            onClick={stopForNow}
-          >
-            <Square /> Parar por agora
-          </Button>
+          {savedCount > 0 && (
+            <Button
+              className="col-span-2 h-11 rounded-xl"
+              variant="outline"
+              onClick={stopForNow}
+            >
+              Parar por agora
+            </Button>
+          )}
         </div>
       )}
 
@@ -293,19 +298,19 @@ export function BookUploader({
             playsInline
           />
           <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/80 to-transparent px-4 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-20">
-            <div className="mx-auto grid w-full max-w-lg grid-cols-2 gap-3">
+            <div className="mx-auto grid w-full max-w-lg grid-cols-2 gap-2.5 sm:gap-3">
               <Button
                 className="h-14 rounded-2xl bg-white text-black hover:bg-white/90"
                 onClick={takePhoto}
               >
-                <Check /> Confirmar
+                <Check /> Fotografar
               </Button>
               <Button
                 className="h-14 rounded-2xl border-white/45 bg-black/35 text-white hover:bg-black/55"
                 variant="outline"
                 onClick={stopForNow}
               >
-                <Square /> Parar
+                <X /> {savedCount > 0 ? 'Parar' : 'Cancelar'}
               </Button>
             </div>
           </div>
@@ -321,8 +326,8 @@ export function BookUploader({
       )}
 
       {(phase === 'preview' || phase === 'saving') && previewUrl && (
-        <div className="fixed inset-0 z-[100] flex flex-col bg-[#151714] p-4 pb-[max(1rem,env(safe-area-inset-bottom))] sm:p-6">
-          <div className="relative min-h-0 flex-1 overflow-hidden rounded-3xl bg-black">
+        <div className="fixed inset-0 z-[100] flex flex-col bg-[#151714] p-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] sm:p-6">
+          <div className="relative min-h-0 flex-1 overflow-hidden rounded-[20px] bg-black sm:rounded-3xl">
             <Image
               fill
               unoptimized
@@ -332,9 +337,9 @@ export function BookUploader({
               alt="Foto do livro"
             />
           </div>
-          <div className="mx-auto mt-4 grid w-full max-w-2xl gap-2 sm:grid-cols-3">
+          <div className="mx-auto mt-3 grid w-full max-w-2xl grid-cols-2 gap-2 sm:mt-4 sm:grid-cols-3">
             <Button
-              className="h-13 rounded-2xl border-white/35 bg-white/10 text-white hover:bg-white/20"
+              className="col-span-2 h-12 rounded-2xl border-white/35 bg-white/10 text-white hover:bg-white/20 sm:col-span-1 sm:h-13"
               variant="outline"
               disabled={phase === 'saving'}
               onClick={
@@ -346,7 +351,7 @@ export function BookUploader({
               <RotateCcw /> Nova foto
             </Button>
             <Button
-              className="h-13 rounded-2xl bg-[#d35c41] hover:bg-[#bb4d36]"
+              className="h-12 rounded-2xl bg-[#d35c41] hover:bg-[#bb4d36] sm:h-13"
               disabled={phase === 'saving'}
               onClick={() => saveBook('donation')}
             >
@@ -358,7 +363,7 @@ export function BookUploader({
               Doação
             </Button>
             <Button
-              className="h-13 rounded-2xl bg-[#387c67] hover:bg-[#2f6a58]"
+              className="h-12 rounded-2xl bg-[#387c67] hover:bg-[#2f6a58] sm:h-13"
               disabled={phase === 'saving'}
               onClick={() => saveBook('loan')}
             >

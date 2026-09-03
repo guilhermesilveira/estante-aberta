@@ -88,13 +88,13 @@ export function OwnerLibrary({
 
   return (
     <div className="space-y-5">
-      <section className="rounded-[28px] bg-[#183d33] p-5 text-white shadow-[0_20px_60px_rgb(24_61_51/18%)] sm:p-7">
+      <section className="rounded-[22px] bg-[#183d33] p-4 text-white shadow-[0_20px_60px_rgb(24_61_51/18%)] sm:rounded-[28px] sm:p-7">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#b9d8ca]">
               Link da sua estante
             </p>
-            <h2 className="mt-1 font-heading text-2xl font-bold tracking-[-0.04em]">
+            <h2 className="mt-1 font-heading text-[1.4rem] font-bold leading-tight tracking-[-0.04em] sm:text-2xl">
               Sua estante está pronta para circular
             </h2>
             <p className="mt-2 max-w-xl text-sm leading-6 text-white/70">
@@ -102,15 +102,15 @@ export function OwnerLibrary({
               enviam o pedido para você confirmar.
             </p>
           </div>
-          <div className="flex shrink-0 flex-wrap gap-2">
+          <div className="grid shrink-0 grid-cols-2 gap-2 sm:flex sm:flex-wrap">
             <Button
-              className="h-11 rounded-xl bg-[#f0be46] px-4 text-[#2f401e] hover:bg-[#f0be46]/90"
+              className="h-11 min-w-0 rounded-xl bg-[#f0be46] px-3 text-[#2f401e] hover:bg-[#f0be46]/90 sm:px-4"
               onClick={shareWhatsApp}
             >
               <MessageCircle /> WhatsApp
             </Button>
             <Button
-              className="h-11 rounded-xl border-white/25 bg-white/10 px-4 text-white hover:bg-white/20"
+              className="h-11 min-w-0 rounded-xl border-white/25 bg-white/10 px-3 text-white hover:bg-white/20 sm:px-4"
               variant="outline"
               onClick={copyLink}
             >
@@ -133,7 +133,7 @@ export function OwnerLibrary({
             <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#d35c41]">
               Seus livros
             </p>
-            <h2 className="mt-1 font-heading text-3xl font-bold tracking-[-0.045em]">
+            <h2 className="mt-1 font-heading text-[1.75rem] font-bold tracking-[-0.045em] sm:text-3xl">
               {books.length} {books.length === 1 ? 'livro' : 'livros'} na
               estante
             </h2>
@@ -150,10 +150,10 @@ export function OwnerLibrary({
             }[book.status];
             return (
               <article
-                className="overflow-hidden rounded-[24px] border bg-card shadow-[0_12px_38px_rgb(44_43_37/7%)]"
+                className="overflow-hidden rounded-[22px] border bg-card shadow-[0_12px_38px_rgb(44_43_37/7%)] sm:rounded-[24px]"
                 key={book.id}
               >
-                <div className="relative aspect-[4/3] overflow-hidden bg-[#e8dfcd]">
+                <div className="relative aspect-[16/10] overflow-hidden bg-[#e8dfcd] sm:aspect-[4/3]">
                   {book.photoBatchId ? (
                     <Image
                       fill
@@ -205,10 +205,10 @@ export function OwnerLibrary({
                       Doação
                     </span>
                   </button>
-                  <div className="mt-3 flex flex-wrap gap-2">
+                  <div className="mt-3 grid grid-cols-2 gap-2 sm:flex sm:flex-wrap">
                     {book.status === 'loaned' && (
                       <Button
-                        className="h-9 rounded-xl"
+                        className="col-span-2 h-10 rounded-xl sm:col-span-1 sm:h-9"
                         size="sm"
                         variant="outline"
                         disabled={busy === book.id}
@@ -221,7 +221,7 @@ export function OwnerLibrary({
                     )}
                     {book.status === 'reserved' && (
                       <Button
-                        className="h-9 rounded-xl"
+                        className="col-span-2 h-10 rounded-xl sm:col-span-1 sm:h-9"
                         size="sm"
                         variant="outline"
                         disabled={busy === book.id}
@@ -233,7 +233,7 @@ export function OwnerLibrary({
                       </Button>
                     )}
                     <Button
-                      className="h-9 text-muted-foreground"
+                      className="col-span-2 h-10 text-muted-foreground sm:col-span-1 sm:h-9"
                       size="sm"
                       variant="ghost"
                       disabled={busy === book.id}

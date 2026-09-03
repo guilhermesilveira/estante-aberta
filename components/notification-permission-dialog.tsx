@@ -139,7 +139,7 @@ export function NotificationPermissionDialog({
 
   return (
     <div
-      className="fixed inset-0 z-[120] grid place-items-end bg-[#10261f]/70 p-3 backdrop-blur-sm sm:place-items-center sm:p-6"
+      className="fixed inset-0 z-[120] grid place-items-end bg-[#10261f]/70 pt-3 backdrop-blur-sm sm:place-items-center sm:p-6"
       role="presentation"
     >
       <dialog
@@ -147,7 +147,7 @@ export function NotificationPermissionDialog({
         aria-describedby="notification-permission-description"
         aria-labelledby="notification-permission-title"
         aria-modal="true"
-        className="relative m-0 w-full max-w-lg rounded-[28px] border-0 bg-card p-5 text-foreground shadow-[0_28px_90px_rgb(10_30_24/35%)] sm:p-7"
+        className="relative m-0 max-h-[calc(100dvh-0.75rem)] w-full max-w-lg overflow-y-auto rounded-t-[28px] border-0 bg-card px-5 pb-[max(1.25rem,env(safe-area-inset-bottom))] pt-5 text-foreground shadow-[0_28px_90px_rgb(10_30_24/35%)] sm:max-h-[calc(100dvh-3rem)] sm:rounded-[28px] sm:p-7"
       >
         <span
           className={`grid size-12 place-items-center rounded-2xl ${finished ? 'bg-[#e8f2ed] text-[#275b4b]' : hasProblem ? 'bg-[#fff0eb] text-[#a74630]' : 'bg-[#fff7dd] text-[#7a5e12]'}`}
@@ -162,7 +162,7 @@ export function NotificationPermissionDialog({
         </span>
 
         <h2
-          className="mt-4 font-heading text-3xl font-bold tracking-[-0.045em]"
+          className="mt-4 font-heading text-[1.75rem] font-bold leading-tight tracking-[-0.045em] sm:text-3xl"
           id="notification-permission-title"
         >
           {step === 'success'
@@ -177,7 +177,7 @@ export function NotificationPermissionDialog({
         </h2>
 
         <div
-          className="mt-3 space-y-3 text-base leading-7 text-muted-foreground"
+          className="mt-3 space-y-3 text-[0.95rem] leading-6 text-muted-foreground sm:text-base sm:leading-7"
           id="notification-permission-description"
         >
           {step === 'intro' && (
@@ -211,7 +211,7 @@ export function NotificationPermissionDialog({
         <div className="mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end">
           {step === 'intro' && (
             <Button
-              className="h-12 rounded-2xl"
+              className="h-12 w-full rounded-2xl sm:w-auto"
               variant="ghost"
               onClick={onComplete}
             >
@@ -221,20 +221,20 @@ export function NotificationPermissionDialog({
           {step === 'intro' && (
             <Button
               ref={primaryButton}
-              className="h-12 rounded-2xl px-5"
+              className="h-12 w-full rounded-2xl px-5 sm:w-auto"
               onClick={enableNotifications}
             >
               <BellRing /> Continuar e permitir
             </Button>
           )}
           {step === 'working' && (
-            <Button className="h-12 rounded-2xl px-5" disabled>
+            <Button className="h-12 w-full rounded-2xl px-5 sm:w-auto" disabled>
               <LoaderCircle className="animate-spin" /> Aguardando…
             </Button>
           )}
           {hasProblem && step !== 'unavailable' && (
             <Button
-              className="h-12 rounded-2xl"
+              className="h-12 w-full rounded-2xl sm:w-auto"
               variant="outline"
               onClick={enableNotifications}
             >
@@ -242,7 +242,10 @@ export function NotificationPermissionDialog({
             </Button>
           )}
           {(finished || hasProblem) && (
-            <Button className="h-12 rounded-2xl px-5" onClick={onComplete}>
+            <Button
+              className="h-12 w-full rounded-2xl px-5 sm:w-auto"
+              onClick={onComplete}
+            >
               {completionLabel}
             </Button>
           )}

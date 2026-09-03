@@ -73,19 +73,24 @@ export default async function RequestPage({
     request.status === 'pending' ? 'Livros solicitados' : 'Livros confirmados';
 
   return (
-    <main className="min-h-screen bg-[#f6f1e8] px-5 py-6 text-foreground sm:py-10">
+    <main className="min-h-dvh bg-[#f6f1e8] px-4 py-4 text-foreground sm:px-5 sm:py-10">
       <div className="mx-auto w-full max-w-2xl">
-        <div className="mb-6">
-          <Brand />
+        <div className="mb-4 sm:mb-6">
+          <div className="sm:hidden">
+            <Brand compact />
+          </div>
+          <div className="hidden sm:block">
+            <Brand />
+          </div>
         </div>
-        <section className="rounded-[30px] border bg-card p-5 shadow-[0_24px_80px_rgb(44_43_37/10%)] sm:p-8">
+        <section className="rounded-[24px] border bg-card p-4 shadow-[0_24px_80px_rgb(44_43_37/10%)] sm:rounded-[30px] sm:p-8">
           <span className="grid size-14 place-items-center rounded-2xl bg-[#e8f2ed] text-[#275b4b]">
             <StatusIcon className="size-7" />
           </span>
           <Badge className="mt-5" variant="secondary">
             {content.label}
           </Badge>
-          <h1 className="mt-3 font-heading text-4xl font-bold leading-tight tracking-[-0.055em]">
+          <h1 className="mt-3 font-heading text-[2rem] font-bold leading-tight tracking-[-0.05em] sm:text-4xl">
             {content.title}
           </h1>
           <p className="mt-3 max-w-xl leading-7 text-muted-foreground">
@@ -117,10 +122,10 @@ export default async function RequestPage({
               <h2 className="font-heading text-2xl font-bold tracking-[-0.035em]">
                 {bookHeading}
               </h2>
-              <div className="mt-3 grid grid-cols-3 gap-3 sm:grid-cols-5">
+              <div className="mt-3 grid grid-cols-3 gap-2.5 sm:grid-cols-5 sm:gap-3">
                 {request.books.map((book, index) => (
                   <div key={book.id}>
-                    <div className="relative aspect-square overflow-hidden rounded-2xl bg-[#e8dfcd]">
+                    <div className="relative aspect-square overflow-hidden rounded-xl bg-[#e8dfcd] sm:rounded-2xl">
                       {book.photoBatchId ? (
                         <Image
                           fill
@@ -166,9 +171,12 @@ export default async function RequestPage({
                 timeZone: 'America/Sao_Paulo',
               }).format(new Date(request.createdAt))}
             </p>
-            <div className="mt-5 flex flex-wrap items-center gap-3">
+            <div className="mt-5 flex flex-col items-stretch gap-3 sm:flex-row sm:flex-wrap sm:items-center">
               <a
-                className={buttonVariants({ variant: 'outline' })}
+                className={buttonVariants({
+                  variant: 'outline',
+                  className: 'h-11',
+                })}
                 href={`/e/${request.shelf.slug}`}
               >
                 Voltar para a estante

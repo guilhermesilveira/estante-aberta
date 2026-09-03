@@ -127,18 +127,18 @@ export function PublicShelf({
   if (successCode) {
     return (
       <>
-        <main className="grid min-h-screen place-items-center bg-[#f6f1e8] px-5 py-10">
-          <section className="w-full max-w-lg rounded-[32px] border bg-card p-7 text-center shadow-[0_24px_80px_rgb(44_43_37/12%)] sm:p-10">
+        <main className="grid min-h-dvh items-start bg-[#f6f1e8] px-4 py-4 sm:place-items-center sm:px-5 sm:py-10">
+          <section className="w-full max-w-lg rounded-[24px] border bg-card p-5 text-center shadow-[0_24px_80px_rgb(44_43_37/12%)] sm:rounded-[32px] sm:p-10">
             <span className="mx-auto grid size-16 place-items-center rounded-full bg-[#e8f2ed] text-[#275b4b]">
               <BookCheck className="size-8" />
             </span>
             <p className="mt-5 text-xs font-bold uppercase tracking-[0.12em] text-[#d35c41]">
               Pedido {successCode}
             </p>
-            <h1 className="mt-2 font-heading text-4xl font-bold leading-tight tracking-[-0.055em]">
+            <h1 className="mt-2 font-heading text-[2rem] font-bold leading-tight tracking-[-0.05em] sm:text-4xl">
               Pedido efetuado.
             </h1>
-            <p className="mx-auto mt-4 max-w-sm leading-7 text-muted-foreground">
+            <p className="mx-auto mt-4 max-w-sm leading-6 text-muted-foreground sm:leading-7">
               Sua sacola de livros foi enviada. {shelf.ownerName} vai confirmar
               quais livros poderá separar.
             </p>
@@ -185,8 +185,8 @@ export function PublicShelf({
       (book) => book.status === 'available' && selected.includes(book.id),
     );
     return (
-      <main className="min-h-screen bg-[#f6f1e8] px-5 py-6 sm:py-10">
-        <section className="mx-auto w-full max-w-2xl rounded-[30px] border bg-card p-5 shadow-[0_24px_80px_rgb(44_43_37/10%)] sm:p-8">
+      <main className="min-h-dvh bg-card sm:bg-[#f6f1e8] sm:px-5 sm:py-10">
+        <section className="mx-auto min-h-dvh w-full max-w-2xl bg-card p-4 sm:min-h-0 sm:rounded-[30px] sm:border sm:p-8 sm:shadow-[0_24px_80px_rgb(44_43_37/10%)]">
           <Button
             className="-ml-2"
             variant="ghost"
@@ -197,7 +197,7 @@ export function PublicShelf({
           <p className="mt-4 text-xs font-bold uppercase tracking-[0.12em] text-[#d35c41]">
             Pedir livros
           </p>
-          <h1 className="mt-1 font-heading text-4xl font-bold tracking-[-0.055em]">
+          <h1 className="mt-1 font-heading text-[2rem] font-bold leading-tight tracking-[-0.05em] sm:text-4xl">
             Confirme o pedido
           </h1>
           <p className="mt-2 text-sm text-muted-foreground">
@@ -205,10 +205,10 @@ export function PublicShelf({
             <strong className="text-foreground">{viewerName}</strong>. Esse nome
             vem da sua conta e não pode ser alterado aqui.
           </p>
-          <div className="mt-5 grid grid-cols-3 gap-2 sm:grid-cols-5">
+          <div className="mt-5 grid grid-cols-3 gap-2.5 sm:grid-cols-5">
             {chosenBooks.map((book, index) => (
               <button
-                className="group relative aspect-square overflow-hidden rounded-2xl bg-[#e8dfcd]"
+                className="group relative aspect-square overflow-hidden rounded-xl bg-[#e8dfcd] sm:rounded-2xl"
                 aria-label={`Remover livro ${index + 1} da escolha`}
                 key={book.id}
                 type="button"
@@ -270,8 +270,8 @@ export function PublicShelf({
   }
 
   return (
-    <main className="min-h-screen bg-background pb-28 text-foreground">
-      <header className="relative overflow-hidden bg-[#183d33] px-5 pb-14 pt-8 text-white sm:pb-20 sm:pt-12">
+    <main className="min-h-dvh bg-background pb-28 text-foreground">
+      <header className="relative overflow-hidden bg-[#183d33] px-4 pb-11 pt-4 text-white sm:px-5 sm:pb-20 sm:pt-12">
         <div className="absolute -right-16 -top-28 size-72 rounded-full bg-[#f0be46]/25 blur-2xl" />
         <div className="absolute -bottom-40 -left-20 size-80 rounded-full bg-[#ef6d4e]/25 blur-3xl" />
         <div className="relative mx-auto max-w-5xl">
@@ -288,14 +288,14 @@ export function PublicShelf({
             </HardLink>
             <InstallAppButton onDark />
           </div>
-          <div className="mt-10 max-w-3xl">
-            <h1 className="font-heading text-[clamp(2.8rem,9vw,5.4rem)] font-bold leading-[0.95] tracking-[-0.07em]">
+          <div className="mt-7 max-w-3xl sm:mt-10">
+            <h1 className="font-heading text-[2.6rem] font-bold leading-[0.96] tracking-[-0.06em] sm:text-[4rem] lg:text-[5.4rem]">
               {shelf.name}
             </h1>
-            <p className="mt-5 max-w-xl text-lg leading-8 text-white/70">
+            <p className="mt-3 max-w-xl text-base leading-7 text-white/75 sm:mt-5 sm:text-lg sm:leading-8">
               {shelf.intro}
             </p>
-            <p className="mt-5 flex max-w-xl items-start gap-2 text-xs leading-5 text-white/60">
+            <p className="mt-4 flex max-w-xl items-start gap-2 text-xs leading-5 text-white/65 sm:mt-5">
               <ShieldAlert className="mt-0.5 size-4 shrink-0" />
               <span>
                 Esta estante é para pessoas que já se conhecem. A entrega
@@ -307,16 +307,16 @@ export function PublicShelf({
         </div>
       </header>
 
-      <section className="mx-auto -mt-6 w-full max-w-5xl px-5 sm:-mt-8">
-        <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-card px-4 py-3 shadow-[0_12px_38px_rgb(44_43_37/8%)]">
+      <section className="mx-auto -mt-5 w-full max-w-5xl px-4 sm:-mt-8 sm:px-5">
+        <div className="mb-4 flex items-center justify-between gap-3 rounded-2xl border bg-card px-3.5 py-3 shadow-[0_12px_38px_rgb(44_43_37/8%)] sm:mb-5 sm:px-4">
           <p className="text-sm font-semibold">Escolha quantos livros quiser</p>
-          <p className="text-sm text-muted-foreground">
+          <p className="shrink-0 text-right text-xs text-muted-foreground sm:text-sm">
             {books.filter((book) => book.status === 'available').length}{' '}
             disponíveis de {books.length}
           </p>
         </div>
         {books.length ? (
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">
+          <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">
             {books.map((book, index) => {
               const isAvailable = book.status === 'available';
               const isSelected = isAvailable && selected.includes(book.id);
@@ -332,7 +332,7 @@ export function PublicShelf({
                 <button
                   type="button"
                   aria-pressed={isSelected}
-                  className={`group overflow-hidden rounded-[22px] border bg-card text-left shadow-[0_10px_30px_rgb(44_43_37/7%)] transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#387c67]/25 ${isSelected ? 'border-[#387c67] ring-2 ring-[#387c67]' : isAvailable ? 'hover:-translate-y-0.5 hover:border-[#387c67]/40' : 'cursor-default opacity-70'}`}
+                  className={`group min-w-0 overflow-hidden rounded-[18px] border bg-card text-left shadow-[0_10px_30px_rgb(44_43_37/7%)] transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#387c67]/25 sm:rounded-[22px] ${isSelected ? 'border-[#387c67] ring-2 ring-[#387c67]' : isAvailable ? 'hover:-translate-y-0.5 hover:border-[#387c67]/40' : 'cursor-default opacity-70'}`}
                   disabled={!isAvailable}
                   key={book.id}
                   onClick={() => toggle(book.id)}
@@ -355,12 +355,12 @@ export function PublicShelf({
                       </div>
                     )}
                     <span
-                      className={`absolute right-2 top-2 grid size-7 place-items-center rounded-full border-2 ${isSelected ? 'border-white bg-[#387c67] text-white' : 'border-white bg-white/85 text-transparent'}`}
+                      className={`absolute right-2 top-2 grid size-8 place-items-center rounded-full border-2 ${isSelected ? 'border-white bg-[#387c67] text-white' : 'border-white bg-white/85 text-transparent'}`}
                     >
                       <Check className="size-4" strokeWidth={3} />
                     </span>
                   </div>
-                  <div className="p-3 sm:p-4">
+                  <div className="min-w-0 p-2.5 sm:p-4">
                     <Badge
                       className={
                         book.status === 'loaned'
@@ -409,10 +409,10 @@ export function PublicShelf({
       </section>
 
       {selected.length > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 p-3 backdrop-blur sm:p-4">
-          <div className="mx-auto flex max-w-3xl items-center justify-between gap-4">
+        <div className="fixed inset-x-0 bottom-0 z-40 border-t bg-card/95 px-3 pb-[max(0.75rem,env(safe-area-inset-bottom))] pt-3 backdrop-blur sm:p-4">
+          <div className="mx-auto flex max-w-3xl items-center justify-between gap-3 sm:gap-4">
             <div className="min-w-0">
-              <p className="font-heading text-xl font-bold tracking-[-0.03em]">
+              <p className="font-heading text-lg font-bold tracking-[-0.03em] sm:text-xl">
                 {selected.length}{' '}
                 {selected.length === 1 ? 'selecionado' : 'selecionados'}
               </p>
@@ -421,7 +421,7 @@ export function PublicShelf({
               </p>
             </div>
             <Button
-              className="h-12 rounded-2xl px-5 text-base"
+              className="h-12 shrink-0 rounded-2xl px-5 text-base"
               onClick={() => setShowConfirmation(true)}
             >
               Pedir <Send />

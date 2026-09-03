@@ -36,9 +36,9 @@ export default async function MyShelfPage() {
   ).length;
 
   return (
-    <main className="min-h-screen bg-background text-foreground">
-      <header className="border-b bg-card/90 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-5 py-4 sm:px-8">
+    <main className="min-h-dvh bg-background text-foreground">
+      <header className="sticky top-0 z-40 border-b bg-card/95 backdrop-blur">
+        <div className="mx-auto flex w-full max-w-6xl items-center justify-between gap-2 px-4 py-3 sm:gap-4 sm:px-8 sm:py-4">
           <div className="sm:hidden">
             <Brand compact />
           </div>
@@ -62,28 +62,28 @@ export default async function MyShelfPage() {
         </div>
       </header>
 
-      <div className="mx-auto w-full max-w-6xl px-5 py-7 sm:px-8 sm:py-10">
-        <section className="mb-7 flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
+      <div className="mx-auto w-full max-w-6xl px-4 py-5 sm:px-8 sm:py-10">
+        <section className="mb-6 flex flex-col gap-4 sm:mb-7 sm:flex-row sm:items-end sm:justify-between sm:gap-5">
           <div>
             <p className="text-xs font-bold uppercase tracking-[0.13em] text-[#d35c41]">
               Sua conta
             </p>
-            <h1 className="mt-2 font-heading text-[clamp(2.5rem,7vw,4.6rem)] font-bold leading-none tracking-[-0.065em]">
+            <h1 className="mt-1 font-heading text-[2.5rem] font-bold leading-none tracking-[-0.06em] sm:mt-2 sm:text-[4.6rem]">
               Minha estante
             </h1>
             <p className="mt-3 max-w-xl text-muted-foreground">
               Fotografe um livro e escolha entre doação ou empréstimo.
             </p>
           </div>
-          <div className="flex gap-3">
-            <div className="rounded-2xl border bg-card px-4 py-3">
+          <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
+            <div className="min-w-0 rounded-2xl border bg-card px-3 py-3 sm:px-4">
               <Library className="size-4 text-[#387c67]" />
               <p className="mt-2 font-heading text-2xl font-bold">
                 {books.length}
               </p>
               <p className="text-xs text-muted-foreground">livros</p>
             </div>
-            <div className="rounded-2xl border bg-card px-4 py-3">
+            <div className="min-w-0 rounded-2xl border bg-card px-3 py-3 sm:px-4">
               <Clock3 className="size-4 text-[#d35c41]" />
               <p className="mt-2 font-heading text-2xl font-bold">
                 {pendingRequests}
@@ -105,12 +105,12 @@ export default async function MyShelfPage() {
           </div>
         )}
 
-        <section className="mt-10">
+        <section className="mt-8 sm:mt-10">
           <div className="mb-4">
             <p className="text-xs font-bold uppercase tracking-[0.12em] text-[#d35c41]">
               Organizar pedidos
             </p>
-            <h2 className="mt-1 font-heading text-3xl font-bold tracking-[-0.045em]">
+            <h2 className="mt-1 font-heading text-[1.75rem] font-bold tracking-[-0.045em] sm:text-3xl">
               Pedidos recebidos
             </h2>
           </div>
