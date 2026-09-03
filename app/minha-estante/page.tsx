@@ -6,6 +6,7 @@ import { BookUploader } from '@/components/book-uploader';
 import { InstallAppButton } from '@/components/install-app';
 import { OwnerLibrary } from '@/components/owner-library';
 import { RequestList } from '@/components/request-list';
+import { TermsLink } from '@/components/terms-link';
 import { buttonVariants } from '@/components/ui/button';
 import {
   getOrCreateShelf,
@@ -85,6 +86,10 @@ export default async function MyShelfPage() {
         </section>
 
         <BookUploader defaultOpen={books.length === 0} />
+        <p className="mt-3 text-sm leading-6 text-muted-foreground">
+          Ao disponibilizar livros, use somente o local de troca do seu grupo.{' '}
+          <TermsLink className="text-foreground" />
+        </p>
 
         {books.length > 0 && (
           <div className="mt-8">

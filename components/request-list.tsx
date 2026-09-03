@@ -14,6 +14,7 @@ import Image from 'next/image';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
+import { TermsLink } from '@/components/terms-link';
 import type { BookRequest } from '@/db/repository';
 
 const statusLabel: Record<BookRequest['status'], string> = {
@@ -106,6 +107,7 @@ export function RequestList({
         <p className="mt-1 text-sm text-muted-foreground">
           Depois que você compartilhar a estante.
         </p>
+        <TermsLink className="mt-3 inline-block text-sm text-foreground" />
       </div>
     );
   }
@@ -114,9 +116,11 @@ export function RequestList({
     <div className="space-y-3">
       <p className="flex items-start gap-2 rounded-2xl bg-[#fff7dd] px-4 py-3 text-xs leading-5 text-[#6d561a]">
         <ShieldAlert className="mt-0.5 size-4 shrink-0" />
-        Você verá somente o nome da conta que fez o pedido. Use esta estante com
-        pessoas que já conhece e entregue os livros no local e no horário
-        combinados pelo grupo.
+        <span>
+          Você verá somente o nome da conta que fez o pedido. Use esta estante
+          com pessoas que já conhece e entregue os livros no local e no horário
+          combinados pelo grupo. <TermsLink />
+        </span>
       </p>
       {requests.map((request) => {
         const selected = selectedByRequest[request.id] ?? [];

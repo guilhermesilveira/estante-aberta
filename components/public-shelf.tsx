@@ -20,6 +20,7 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { HardLink } from '@/components/hard-link';
 import { InstallAppButton, useInstallApp } from '@/components/install-app';
+import { TermsLink } from '@/components/terms-link';
 import type { Book, Shelf } from '@/db/repository';
 
 export function PublicShelf({
@@ -104,6 +105,7 @@ export function PublicShelf({
           <p className="mx-auto mt-4 max-w-sm text-xs leading-5 text-muted-foreground">
             A entrega acontece no local e no horário já combinados pelo grupo.
           </p>
+          <TermsLink className="mt-3 inline-block text-sm text-foreground" />
           <Button
             className="mt-7 h-11 rounded-xl"
             variant="outline"
@@ -171,9 +173,11 @@ export function PublicShelf({
           <form className="mt-6 space-y-4" onSubmit={submitRequest}>
             <p className="flex items-start gap-2 rounded-xl bg-[#fff7dd] px-4 py-3 text-xs leading-5 text-[#6d561a]">
               <ShieldAlert className="mt-0.5 size-4 shrink-0" />
-              Use esta estante apenas para trocas entre pessoas que você já
-              conhece. A entrega acontece no local e no horário já combinados
-              pelo grupo.
+              <span>
+                Use esta estante apenas para trocas entre pessoas que você já
+                conhece. A entrega acontece no local e no horário já combinados
+                pelo grupo. <TermsLink />
+              </span>
             </p>
             {error && (
               <p
@@ -229,8 +233,11 @@ export function PublicShelf({
             </p>
             <p className="mt-5 flex max-w-xl items-start gap-2 text-xs leading-5 text-white/60">
               <ShieldAlert className="mt-0.5 size-4 shrink-0" />
-              Esta estante é para pessoas que já se conhecem. A entrega acontece
-              no local e no horário combinados pelo grupo.
+              <span>
+                Esta estante é para pessoas que já se conhecem. A entrega
+                acontece no local e no horário combinados pelo grupo.{' '}
+                <TermsLink className="text-white/85 hover:text-white" />
+              </span>
             </p>
           </div>
         </div>

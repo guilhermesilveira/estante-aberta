@@ -5,6 +5,7 @@ import { chatGPTSignInPath } from '@/app/chatgpt-auth';
 import { Badge } from '@/components/ui/badge';
 import { HardLink } from '@/components/hard-link';
 import { InstallAppButton } from '@/components/install-app';
+import { TermsLink } from '@/components/terms-link';
 import { buttonVariants } from '@/components/ui/button';
 
 const sampleBooks = [
@@ -185,6 +186,13 @@ export default function Home() {
           ))}
         </div>
       </section>
+
+      <footer className="mx-auto flex w-full max-w-6xl flex-col gap-2 px-5 py-8 text-sm text-muted-foreground sm:flex-row sm:items-center sm:justify-between sm:px-8">
+        <p>
+          Use somente com pessoas conhecidas e no local definido pelo grupo.
+        </p>
+        <TermsLink className="text-foreground" />
+      </footer>
     </main>
   );
 }
