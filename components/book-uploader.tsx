@@ -34,6 +34,7 @@ export function BookUploader({
   const [notificationPromptOpen, setNotificationPromptOpen] = useState(false);
   const [resumePhotoSource, setResumePhotoSource] =
     useState<PhotoSource | null>(null);
+  const [finishAfterNotification, setFinishAfterNotification] = useState(false);
   const [error, setError] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
   const video = useRef<HTMLVideoElement>(null);
@@ -141,8 +142,14 @@ export function BookUploader({
 
   function finishNotificationPrompt() {
     const source = resumePhotoSource;
+    const shouldFinish = finishAfterNotification;
     setNotificationPromptOpen(false);
     setResumePhotoSource(null);
+    setFinishAfterNotification(false);
+    if (shouldFinish) {
+      finishRegistration();
+      return;
+    }
     if (source) void continueAfterSave(source);
   }
 
@@ -182,12 +189,29 @@ export function BookUploader({
     }
   }
 
-  function stopForNow() {
+  function finishRegistration() {
     stopCamera();
     clearPhoto();
     setPhase('pick');
     setOpen(false);
     window.location.assign('/minha-estante');
+  }
+
+  function stopForNow() {
+    stopCamera();
+    clearPhoto();
+    setPhase('pick');
+
+    const notificationPermissionGranted =
+      'Notification' in window && Notification.permission === 'granted';
+    if (savedCount > 0 && !notificationPermissionGranted) {
+      setResumePhotoSource(null);
+      setFinishAfterNotification(true);
+      setNotificationPromptOpen(true);
+      return;
+    }
+
+    finishRegistration();
   }
 
   if (!open) {
@@ -367,7 +391,14 @@ export function BookUploader({
       )}
 
       {notificationPromptOpen && (
-        <NotificationPermissionDialog onComplete={finishNotificationPrompt} />
+        <NotificationPermissionDialog
+          completionLabel={
+            finishAfterNotification
+              ? 'Voltar para minha estante'
+              : 'Continuar cadastrando'
+          }
+          onComplete={finishNotificationPrompt}
+        />
       )}
     </section>
   );

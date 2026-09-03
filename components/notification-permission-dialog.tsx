@@ -34,8 +34,10 @@ function supportsWebPush() {
 }
 
 export function NotificationPermissionDialog({
+  completionLabel = 'Continuar cadastrando',
   onComplete,
 }: {
+  completionLabel?: string;
   onComplete: () => void;
 }) {
   const [step, setStep] = useState<PermissionStep>('intro');
@@ -230,7 +232,7 @@ export function NotificationPermissionDialog({
           )}
           {(finished || hasProblem) && (
             <Button className="h-12 rounded-2xl px-5" onClick={onComplete}>
-              Continuar cadastrando
+              {completionLabel}
             </Button>
           )}
         </div>
