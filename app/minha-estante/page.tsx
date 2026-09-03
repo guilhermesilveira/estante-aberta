@@ -1,4 +1,5 @@
 import { Clock3, Library, LogOut } from 'lucide-react';
+import { redirect } from 'next/navigation';
 
 import { requireChatGPTUser, chatGPTSignOutPath } from '@/app/chatgpt-auth';
 import { Brand } from '@/components/brand';
@@ -9,16 +10,23 @@ import { RequestList } from '@/components/request-list';
 import { TermsLink } from '@/components/terms-link';
 import { buttonVariants } from '@/components/ui/button';
 import {
+  getOrCreateProfileName,
   getOrCreateShelf,
   getOwnerBooks,
   getOwnerRequests,
+  sanitizeOwnerPhotos,
 } from '@/db/repository';
 
 export const dynamic = 'force-dynamic';
 
 export default async function MyShelfPage() {
   const user = await requireChatGPTUser('/minha-estante');
-  const shelf = await getOrCreateShelf(user);
+  const profileName = await getOrCreateProfileName(user);
+  if (!profileName) {
+    redirect('/cadastro?return_to=%2Fminha-estante');
+  }
+  const shelf = await getOrCreateShelf(user, profileName);
+  await sanitizeOwnerPhotos(user.userId);
   const [books, requests] = await Promise.all([
     getOwnerBooks(user.userId),
     getOwnerRequests(shelf.id),
@@ -40,7 +48,7 @@ export default async function MyShelfPage() {
           <div className="flex items-center gap-2">
             <InstallAppButton />
             <span className="hidden max-w-48 truncate text-sm text-muted-foreground sm:block">
-              {user.displayName}
+              {profileName}
             </span>
             <a
               aria-label="Sair da conta"
@@ -93,7 +101,7 @@ export default async function MyShelfPage() {
 
         {books.length > 0 && (
           <div className="mt-8">
-            <OwnerLibrary initialBooks={books} shelf={shelf} />
+            <OwnerLibrary initialBooks={books} shelfSlug={shelf.slug} />
           </div>
         )}
 

@@ -1,5 +1,10 @@
 import { getChatGPTUser } from '@/app/chatgpt-auth';
-import { ensureSchema, getOrCreateShelf, getRuntimeEnv } from '@/db/repository';
+import {
+  ensureSchema,
+  getOrCreateProfileName,
+  getOrCreateShelf,
+  getRuntimeEnv,
+} from '@/db/repository';
 import { getVapidPublicKey } from '@/lib/web-push';
 
 type SubscriptionBody = {
@@ -47,6 +52,13 @@ export async function POST(request: Request) {
   const user = await getChatGPTUser();
   if (!user)
     return Response.json({ error: 'Não autorizado.' }, { status: 401 });
+  const profileName = await getOrCreateProfileName(user);
+  if (!profileName) {
+    return Response.json(
+      { error: 'Cadastre seu nome antes de ativar notificações.' },
+      { status: 422 },
+    );
+  }
 
   const body = (await request.json()) as SubscriptionBody;
   const endpoint = body.endpoint;
@@ -60,7 +72,7 @@ export async function POST(request: Request) {
   }
 
   await ensureSchema();
-  const shelf = await getOrCreateShelf(user);
+  const shelf = await getOrCreateShelf(user, profileName);
   const db = getRuntimeEnv().DB;
   const now = Date.now();
   await db

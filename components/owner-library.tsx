@@ -13,21 +13,21 @@ import {
 import Image from 'next/image';
 
 import { Button } from '@/components/ui/button';
-import type { Book, Shelf } from '@/db/repository';
+import type { Book } from '@/db/repository';
 import { requestAppInstall } from '@/lib/install-app';
 
 export function OwnerLibrary({
   initialBooks,
-  shelf,
+  shelfSlug,
 }: {
   initialBooks: Book[];
-  shelf: Shelf;
+  shelfSlug: string;
 }) {
   const [books, setBooks] = useState(initialBooks);
   const [busy, setBusy] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
 
-  const publicPath = `/e/${shelf.slug}`;
+  const publicPath = `/e/${shelfSlug}`;
   const publicUrl = useMemo(
     () =>
       typeof window === 'undefined'

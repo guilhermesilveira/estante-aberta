@@ -1,5 +1,11 @@
 import { getChatGPTUser } from '@/app/chatgpt-auth';
-import { ensureSchema, getOrCreateShelf, getRuntimeEnv } from '@/db/repository';
+import {
+  ensureSchema,
+  getOrCreateProfileName,
+  getOrCreateShelf,
+  getRuntimeEnv,
+} from '@/db/repository';
+import { stripImageMetadata } from '@/lib/photo-metadata';
 
 const acceptedImageTypes = new Set([
   'image/jpeg',
@@ -15,6 +21,13 @@ export async function POST(request: Request) {
       { error: 'Entre na sua conta para salvar livros.' },
       { status: 401 },
     );
+  const profileName = await getOrCreateProfileName(user);
+  if (!profileName) {
+    return Response.json(
+      { error: 'Cadastre seu nome antes de salvar livros.' },
+      { status: 422 },
+    );
+  }
 
   const formData = await request.formData();
   const rawAvailability = formData.get('availability');
@@ -44,7 +57,7 @@ export async function POST(request: Request) {
   }
 
   await ensureSchema();
-  const shelf = await getOrCreateShelf(user);
+  const shelf = await getOrCreateShelf(user, profileName);
   const runtime = getRuntimeEnv();
   const db = runtime.DB;
   const previousBook = await db
@@ -63,7 +76,19 @@ export async function POST(request: Request) {
           ? 'gif'
           : 'jpg';
   const storageKey = `shelves/${shelf.id}/${photoBatchId}.${extension}`;
-  await runtime.FILES.put(storageKey, await photo.arrayBuffer(), {
+  let sanitizedPhoto: Uint8Array;
+  try {
+    sanitizedPhoto = stripImageMetadata(
+      new Uint8Array(await photo.arrayBuffer()),
+      photo.type,
+    ).bytes;
+  } catch {
+    return Response.json(
+      { error: 'A foto está inválida ou corrompida.' },
+      { status: 400 },
+    );
+  }
+  await runtime.FILES.put(storageKey, sanitizedPhoto, {
     httpMetadata: { contentType: photo.type },
     customMetadata: { shelfId: shelf.id, ownerId: user.userId },
   });
@@ -73,7 +98,7 @@ export async function POST(request: Request) {
       .prepare(
         `INSERT INTO photo_batches
          (id, shelf_id, owner_id, storage_key, content_type, status, book_count, created_at)
-         VALUES (?, ?, ?, ?, ?, 'ready', 1, ?)`,
+         VALUES (?, ?, ?, ?, ?, 'sanitized', 1, ?)`,
       )
       .bind(photoBatchId, shelf.id, user.userId, storageKey, photo.type, now),
     db

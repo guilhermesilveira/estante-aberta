@@ -33,7 +33,7 @@ export async function getChatGPTUser(): Promise<ChatGPTUser | null> {
 
   return {
     userId,
-    displayName: fullName ?? email,
+    displayName: fullName ?? '',
     email,
     fullName,
   };
@@ -58,7 +58,7 @@ export function chatGPTSignOutPath(returnTo = '/'): string {
   return `${SIGN_OUT_PATH}?return_to=${encodeURIComponent(safeReturnTo)}`;
 }
 
-function safeRelativeReturnPath(value: string): string {
+export function safeRelativeReturnPath(value: string): string {
   if (!value.startsWith('/') || value.startsWith('//')) return '/';
 
   let url: URL;

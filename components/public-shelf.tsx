@@ -21,8 +21,9 @@ import { Button } from '@/components/ui/button';
 import { HardLink } from '@/components/hard-link';
 import { InstallAppButton } from '@/components/install-app';
 import { TermsLink } from '@/components/terms-link';
-import type { Book, Shelf } from '@/db/repository';
+import type { Book } from '@/db/repository';
 import { requestAppInstall } from '@/lib/install-app';
+import type { PublicShelf as PublicShelfData } from '@/lib/public-shelf-data';
 
 export function PublicShelf({
   books,
@@ -30,7 +31,7 @@ export function PublicShelf({
   viewerName,
 }: {
   books: Book[];
-  shelf: Shelf;
+  shelf: PublicShelfData;
   viewerName: string;
 }) {
   const [selected, setSelected] = useState<string[]>([]);
@@ -40,6 +41,9 @@ export function PublicShelf({
   const [successCode, setSuccessCode] = useState('');
 
   function toggle(bookId: string) {
+    if (books.find((book) => book.id === bookId)?.status !== 'available') {
+      return;
+    }
     setError('');
     setSelected((current) => {
       if (current.includes(bookId))
@@ -119,7 +123,9 @@ export function PublicShelf({
   }
 
   if (showConfirmation) {
-    const chosenBooks = books.filter((book) => selected.includes(book.id));
+    const chosenBooks = books.filter(
+      (book) => book.status === 'available' && selected.includes(book.id),
+    );
     return (
       <main className="min-h-screen bg-[#f6f1e8] px-5 py-6 sm:py-10">
         <section className="mx-auto w-full max-w-2xl rounded-[30px] border bg-card p-5 shadow-[0_24px_80px_rgb(44_43_37/10%)] sm:p-8">
@@ -247,18 +253,29 @@ export function PublicShelf({
         <div className="mb-5 flex flex-wrap items-center justify-between gap-3 rounded-2xl border bg-card px-4 py-3 shadow-[0_12px_38px_rgb(44_43_37/8%)]">
           <p className="text-sm font-semibold">Escolha quantos livros quiser</p>
           <p className="text-sm text-muted-foreground">
-            {books.length} {books.length === 1 ? 'livro' : 'livros'}
+            {books.filter((book) => book.status === 'available').length}{' '}
+            disponíveis de {books.length}
           </p>
         </div>
         {books.length ? (
           <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">
             {books.map((book, index) => {
-              const isSelected = selected.includes(book.id);
+              const isAvailable = book.status === 'available';
+              const isSelected = isAvailable && selected.includes(book.id);
+              const statusLabel =
+                book.status === 'loaned'
+                  ? 'Emprestado'
+                  : book.status === 'reserved'
+                    ? 'Reservado'
+                    : book.availability === 'donation'
+                      ? 'Doação'
+                      : 'Empréstimo';
               return (
                 <button
                   type="button"
                   aria-pressed={isSelected}
-                  className={`group overflow-hidden rounded-[22px] border bg-card text-left shadow-[0_10px_30px_rgb(44_43_37/7%)] transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#387c67]/25 ${isSelected ? 'border-[#387c67] ring-2 ring-[#387c67]' : 'hover:-translate-y-0.5 hover:border-[#387c67]/40'}`}
+                  className={`group overflow-hidden rounded-[22px] border bg-card text-left shadow-[0_10px_30px_rgb(44_43_37/7%)] transition focus-visible:outline-none focus-visible:ring-4 focus-visible:ring-[#387c67]/25 ${isSelected ? 'border-[#387c67] ring-2 ring-[#387c67]' : isAvailable ? 'hover:-translate-y-0.5 hover:border-[#387c67]/40' : 'cursor-default opacity-70'}`}
+                  disabled={!isAvailable}
                   key={book.id}
                   onClick={() => toggle(book.id)}
                 >
@@ -288,20 +305,25 @@ export function PublicShelf({
                   <div className="p-3 sm:p-4">
                     <Badge
                       className={
-                        book.availability === 'donation'
-                          ? 'bg-[#fff0eb] text-[#a74630]'
-                          : 'bg-[#e8f2ed] text-[#275b4b]'
+                        book.status === 'loaned'
+                          ? 'bg-[#e8e8e8] text-[#4f514d]'
+                          : book.status === 'reserved'
+                            ? 'bg-[#fff7dd] text-[#725c29]'
+                            : book.availability === 'donation'
+                              ? 'bg-[#fff0eb] text-[#a74630]'
+                              : 'bg-[#e8f2ed] text-[#275b4b]'
                       }
                       variant="secondary"
                     >
-                      {book.availability === 'donation' ? (
+                      {book.status === 'loaned' ||
+                      book.status === 'reserved' ? (
+                        <BookCheck />
+                      ) : book.availability === 'donation' ? (
                         <Gift />
                       ) : (
                         <Handshake />
                       )}
-                      {book.availability === 'donation'
-                        ? 'Doação'
-                        : 'Empréstimo'}
+                      {statusLabel}
                     </Badge>
                   </div>
                 </button>

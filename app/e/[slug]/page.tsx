@@ -1,36 +1,18 @@
 import type { Metadata } from 'next';
-import { notFound } from 'next/navigation';
+import { notFound, redirect } from 'next/navigation';
 
 import { requireChatGPTUser } from '@/app/chatgpt-auth';
 import { PublicShelf } from '@/components/public-shelf';
-import { getPublicShelf } from '@/db/repository';
-import { SITE_ORIGIN } from '@/lib/site';
+import { getOrCreateProfileName, getPublicShelf } from '@/db/repository';
 
 export const dynamic = 'force-dynamic';
 
-export async function generateMetadata({
-  params,
-}: {
-  params: Promise<{ slug: string }>;
-}): Promise<Metadata> {
-  const { slug } = await params;
-  const data = await getPublicShelf(slug);
-  if (!data) return { title: 'Estante não encontrada' };
-
-  const title = `${data.shelf.name} — Estante Aberta`;
-  const description = `${data.books.length} livros disponíveis para doar ou emprestar.`;
-  const firstPhoto = data.books.find((book) => book.photoBatchId)?.photoBatchId;
-  const images = firstPhoto
-    ? [new URL(`/api/photos/${firstPhoto}`, SITE_ORIGIN).toString()]
-    : [];
-
-  return {
-    title,
-    description,
-    openGraph: { title, description, images },
-    twitter: { card: 'summary_large_image', title, description, images },
-  };
-}
+export const metadata: Metadata = {
+  title: 'Estante compartilhada — Estante Aberta',
+  description: 'Entre para ver uma estante compartilhada com você.',
+  openGraph: { images: [] },
+  twitter: { images: [] },
+};
 
 export default async function SharedShelfPage({
   params,
@@ -43,6 +25,10 @@ export default async function SharedShelfPage({
 
 async function AuthenticatedShelf({ slug }: { slug: string }) {
   const viewer = await requireChatGPTUser(`/e/${slug}`);
+  const viewerName = await getOrCreateProfileName(viewer);
+  if (!viewerName) {
+    redirect(`/cadastro?return_to=${encodeURIComponent(`/e/${slug}`)}`);
+  }
   const data = await getPublicShelf(slug);
   if (!data) notFound();
 
@@ -50,7 +36,7 @@ async function AuthenticatedShelf({ slug }: { slug: string }) {
     <PublicShelf
       books={data.books}
       shelf={data.shelf}
-      viewerName={viewer.displayName}
+      viewerName={viewerName}
     />
   );
 }

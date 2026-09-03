@@ -1,7 +1,11 @@
 import { waitUntil } from 'cloudflare:workers';
 
 import { getChatGPTUser } from '@/app/chatgpt-auth';
-import { ensureSchema, getRuntimeEnv } from '@/db/repository';
+import {
+  ensureSchema,
+  getOrCreateProfileName,
+  getRuntimeEnv,
+} from '@/db/repository';
 import { sendNewRequestNotifications } from '@/lib/web-push';
 
 export async function POST(request: Request) {
@@ -11,6 +15,13 @@ export async function POST(request: Request) {
       { error: 'Entre na sua conta para pedir livros.' },
       { status: 401 },
     );
+  const requesterName = await getOrCreateProfileName(user);
+  if (!requesterName) {
+    return Response.json(
+      { error: 'Cadastre seu nome antes de fazer um pedido.' },
+      { status: 422 },
+    );
+  }
   const body = (await request.json()) as Record<string, unknown>;
   const slug = typeof body.slug === 'string' ? body.slug.trim() : '';
   const bookIds = Array.isArray(body.bookIds)
@@ -67,7 +78,7 @@ export async function POST(request: Request) {
          (id, shelf_id, requester_name, status, created_at, updated_at)
          VALUES (?, ?, ?, 'pending', ?, ?)`,
       )
-      .bind(id, shelf.id, user.displayName.slice(0, 80), now, now),
+      .bind(id, shelf.id, requesterName, now, now),
     ...bookIds.map((bookId) =>
       db
         .prepare(
@@ -80,7 +91,7 @@ export async function POST(request: Request) {
   waitUntil(
     sendNewRequestNotifications(shelf.id, {
       requestId: id,
-      requesterName: user.displayName.slice(0, 80),
+      requesterName,
       bookCount: bookIds.length,
     }),
   );
