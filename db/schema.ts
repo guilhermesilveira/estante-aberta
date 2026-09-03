@@ -18,10 +18,12 @@ export const shelves = sqliteTable(
     slug: text('slug').notNull(),
     intro: text('intro')
       .notNull()
-      .default('Escolha os livros que você gostaria de receber.'),
+      .default(
+        'Escolha os livros que você gostaria de receber no nosso próximo encontro.',
+      ),
     published: integer('published', { mode: 'boolean' })
       .notNull()
-      .default(true),
+      .default(false),
     createdAt: integer('created_at').notNull(),
     updatedAt: integer('updated_at').notNull(),
   },
@@ -105,5 +107,26 @@ export const requestBooks = sqliteTable(
   (table) => [
     primaryKey({ columns: [table.requestId, table.bookId] }),
     index('idx_request_books_book_id').on(table.bookId),
+  ],
+);
+
+export const pushSubscriptions = sqliteTable(
+  'push_subscriptions',
+  {
+    id: text('id').primaryKey(),
+    shelfId: text('shelf_id')
+      .notNull()
+      .references(() => shelves.id, { onDelete: 'cascade' }),
+    ownerId: text('owner_id').notNull(),
+    endpoint: text('endpoint').notNull(),
+    p256dh: text('p256dh').notNull(),
+    auth: text('auth').notNull(),
+    createdAt: integer('created_at').notNull(),
+    updatedAt: integer('updated_at').notNull(),
+  },
+  (table) => [
+    uniqueIndex('idx_push_subscriptions_endpoint').on(table.endpoint),
+    index('idx_push_subscriptions_shelf_id').on(table.shelfId),
+    index('idx_push_subscriptions_owner_id').on(table.ownerId),
   ],
 );

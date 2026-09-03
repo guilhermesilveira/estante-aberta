@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 
+import { NotificationPermissionDialog } from '@/components/notification-permission-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 
@@ -30,6 +31,9 @@ export function BookUploader({
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [photoSource, setPhotoSource] = useState<PhotoSource>('camera');
   const [savedCount, setSavedCount] = useState(0);
+  const [notificationPromptOpen, setNotificationPromptOpen] = useState(false);
+  const [resumePhotoSource, setResumePhotoSource] =
+    useState<PhotoSource | null>(null);
   const [error, setError] = useState('');
   const fileInput = useRef<HTMLInputElement>(null);
   const video = useRef<HTMLVideoElement>(null);
@@ -127,6 +131,21 @@ export function BookUploader({
     );
   }
 
+  async function continueAfterSave(source: PhotoSource) {
+    if (source === 'camera') {
+      await openCamera();
+    } else {
+      setPhase('pick');
+    }
+  }
+
+  function finishNotificationPrompt() {
+    const source = resumePhotoSource;
+    setNotificationPromptOpen(false);
+    setResumePhotoSource(null);
+    if (source) void continueAfterSave(source);
+  }
+
   async function saveBook(availability: 'loan' | 'donation') {
     if (!file) return;
     setPhase('saving');
@@ -140,16 +159,21 @@ export function BookUploader({
         method: 'POST',
         body: formData,
       });
-      const payload = (await response.json()) as { error?: string };
+      const payload = (await response.json()) as {
+        error?: string;
+        isFirstBook?: boolean;
+      };
       if (!response.ok)
         throw new Error(payload.error || 'Não foi possível salvar.');
       clearPhoto();
       setSavedCount((count) => count + 1);
-      if (photoSource === 'camera') {
-        await openCamera();
-      } else {
+      if (payload.isFirstBook) {
+        setResumePhotoSource(photoSource);
         setPhase('pick');
+        setNotificationPromptOpen(true);
+        return;
       }
+      await continueAfterSave(photoSource);
     } catch (caught) {
       setError(
         caught instanceof Error ? caught.message : 'Não foi possível salvar.',
@@ -340,6 +364,10 @@ export function BookUploader({
         >
           {error}
         </p>
+      )}
+
+      {notificationPromptOpen && (
+        <NotificationPermissionDialog onComplete={finishNotificationPrompt} />
       )}
     </section>
   );

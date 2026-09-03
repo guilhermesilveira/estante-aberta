@@ -11,6 +11,12 @@ const { d1, r2 } = hostingConfig;
 
 // macOS Seatbelt blocks FSEvents, so Codex previews need polling for HMR.
 const isCodexSeatbeltSandbox = process.env.CODEX_SANDBOX === 'seatbelt';
+const localVariables = Object.fromEntries(
+  ['VAPID_PUBLIC_KEY', 'VAPID_PRIVATE_KEY', 'VAPID_SUBJECT'].flatMap((key) => {
+    const value = process.env[key];
+    return value ? [[key, value]] : [];
+  }),
+);
 
 const localBindingConfig = {
   main: 'vinext/server/fetch-handler',
@@ -32,6 +38,7 @@ const localBindingConfig = {
         },
       ]
     : [],
+  vars: localVariables,
 };
 
 export default defineConfig(async () => {

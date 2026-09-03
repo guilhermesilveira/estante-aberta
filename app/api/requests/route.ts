@@ -1,5 +1,8 @@
+import { waitUntil } from 'cloudflare:workers';
+
 import { getChatGPTUser } from '@/app/chatgpt-auth';
 import { ensureSchema, getRuntimeEnv } from '@/db/repository';
+import { sendNewRequestNotifications } from '@/lib/web-push';
 
 export async function POST(request: Request) {
   const user = await getChatGPTUser();
@@ -87,6 +90,14 @@ export async function POST(request: Request) {
         .bind(id, bookId),
     ),
   ]);
+
+  waitUntil(
+    sendNewRequestNotifications(shelf.id, {
+      requestId: id,
+      requesterName: user.displayName.slice(0, 80),
+      bookCount: bookIds.length,
+    }),
+  );
 
   return Response.json(
     { code: id.replace(/-/g, '').slice(0, 6).toUpperCase() },

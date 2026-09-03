@@ -1,32 +1,67 @@
 import { getChatGPTUser } from '@/app/chatgpt-auth';
 import { ensureSchema, getOrCreateShelf, getRuntimeEnv } from '@/db/repository';
 
-const acceptedImageTypes = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/gif']);
+const acceptedImageTypes = new Set([
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/gif',
+]);
 
 export async function POST(request: Request) {
   const user = await getChatGPTUser();
-  if (!user) return Response.json({ error: 'Entre na sua conta para salvar livros.' }, { status: 401 });
+  if (!user)
+    return Response.json(
+      { error: 'Entre na sua conta para salvar livros.' },
+      { status: 401 },
+    );
 
   const formData = await request.formData();
   const rawAvailability = formData.get('availability');
-  const availability = rawAvailability === 'donation' || rawAvailability === 'loan' ? rawAvailability : null;
-  if (!availability) return Response.json({ error: 'Escolha doação ou empréstimo.' }, { status: 400 });
+  const availability =
+    rawAvailability === 'donation' || rawAvailability === 'loan'
+      ? rawAvailability
+      : null;
+  if (!availability)
+    return Response.json(
+      { error: 'Escolha doação ou empréstimo.' },
+      { status: 400 },
+    );
 
   const fileValue = formData.get('photo');
-  const photo = fileValue instanceof File && fileValue.size > 0 ? fileValue : null;
-  if (!photo) return Response.json({ error: 'Tire ou envie uma foto do livro.' }, { status: 400 });
+  const photo =
+    fileValue instanceof File && fileValue.size > 0 ? fileValue : null;
+  if (!photo)
+    return Response.json(
+      { error: 'Tire ou envie uma foto do livro.' },
+      { status: 400 },
+    );
   if (!acceptedImageTypes.has(photo.type) || photo.size > 15 * 1024 * 1024) {
-    return Response.json({ error: 'Use uma foto JPG, PNG, WEBP ou GIF de até 15 MB.' }, { status: 400 });
+    return Response.json(
+      { error: 'Use uma foto JPG, PNG, WEBP ou GIF de até 15 MB.' },
+      { status: 400 },
+    );
   }
 
   await ensureSchema();
   const shelf = await getOrCreateShelf(user);
   const runtime = getRuntimeEnv();
   const db = runtime.DB;
+  const previousBook = await db
+    .prepare('SELECT id FROM books WHERE owner_id = ? LIMIT 1')
+    .bind(user.userId)
+    .first<{ id: string }>();
   const now = Date.now();
   const photoBatchId = crypto.randomUUID();
   const bookId = crypto.randomUUID();
-  const extension = photo.type === 'image/png' ? 'png' : photo.type === 'image/webp' ? 'webp' : photo.type === 'image/gif' ? 'gif' : 'jpg';
+  const extension =
+    photo.type === 'image/png'
+      ? 'png'
+      : photo.type === 'image/webp'
+        ? 'webp'
+        : photo.type === 'image/gif'
+          ? 'gif'
+          : 'jpg';
   const storageKey = `shelves/${shelf.id}/${photoBatchId}.${extension}`;
   await runtime.FILES.put(storageKey, await photo.arrayBuffer(), {
     httpMetadata: { contentType: photo.type },
@@ -47,7 +82,18 @@ export async function POST(request: Request) {
          (id, shelf_id, owner_id, photo_batch_id, title, author, availability, status, position, created_at, updated_at)
          VALUES (?, ?, ?, ?, 'Livro fotografado', '', ?, 'available', 0, ?, ?)`,
       )
-      .bind(bookId, shelf.id, user.userId, photoBatchId, availability, now, now),
+      .bind(
+        bookId,
+        shelf.id,
+        user.userId,
+        photoBatchId,
+        availability,
+        now,
+        now,
+      ),
   ]);
-  return Response.json({ bookId, photoBatchId }, { status: 201 });
+  return Response.json(
+    { bookId, photoBatchId, isFirstBook: !previousBook },
+    { status: 201 },
+  );
 }
