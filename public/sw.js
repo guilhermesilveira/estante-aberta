@@ -1,3 +1,11 @@
+self.addEventListener('install', () => {
+  self.skipWaiting();
+});
+
+self.addEventListener('activate', (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
 self.addEventListener('push', (event) => {
   let data = {};
   try {
@@ -9,7 +17,8 @@ self.addEventListener('push', (event) => {
   const title = data.title || 'Estante Aberta';
   const options = {
     body: data.body || 'Você recebeu uma novidade na sua estante.',
-    icon: '/favicon.svg',
+    icon: '/icons/icon-192.png',
+    badge: '/icons/badge-96.png',
     tag: data.tag || 'estante-aberta',
     data: { url: data.url || '/minha-estante' },
   };

@@ -1,7 +1,8 @@
-import type { Metadata } from 'next';
+import type { Metadata, Viewport } from 'next';
 import { DM_Sans, Fraunces } from 'next/font/google';
 
 import './globals.css';
+import { InstallAppProvider } from '@/components/install-app';
 import { SITE_ORIGIN } from '@/lib/site';
 
 const bodyFont = DM_Sans({
@@ -19,6 +20,20 @@ export const metadata: Metadata = {
   title: 'Estante Aberta — livros que circulam',
   description:
     'Fotografe seus livros, monte sua estante e compartilhe para doar ou emprestar.',
+  manifest: '/manifest.webmanifest',
+  icons: {
+    icon: '/favicon.svg',
+    apple: '/icons/apple-touch-icon.png',
+  },
+  appleWebApp: {
+    capable: true,
+    title: 'Estante Aberta',
+    statusBarStyle: 'default',
+  },
+  other: {
+    'apple-mobile-web-app-capable': 'yes',
+    'mobile-web-app-capable': 'yes',
+  },
   openGraph: {
     title: 'Estante Aberta',
     description: 'Livros que circulam para doar, emprestar e compartilhar.',
@@ -32,10 +47,21 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
+export const viewport: Viewport = {
+  themeColor: '#183d33',
+  viewportFit: 'cover',
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="pt-BR">
-      <body className={`${bodyFont.variable} ${headingFont.variable} antialiased`}>{children}</body>
+      <body
+        className={`${bodyFont.variable} ${headingFont.variable} antialiased`}
+      >
+        <InstallAppProvider>{children}</InstallAppProvider>
+      </body>
     </html>
   );
 }

@@ -1,9 +1,10 @@
-import { BookOpen, Camera, Check, Send, Sparkles } from 'lucide-react';
+import { BookOpen, Camera, Check, Library, Send, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 
 import { chatGPTSignInPath } from '@/app/chatgpt-auth';
 import { Badge } from '@/components/ui/badge';
 import { HardLink } from '@/components/hard-link';
+import { InstallAppButton } from '@/components/install-app';
 import { buttonVariants } from '@/components/ui/button';
 
 const sampleBooks = [
@@ -41,20 +42,25 @@ export default function Home() {
           <span className="grid size-10 place-items-center rounded-[14px] bg-primary text-primary-foreground shadow-[0_8px_24px_rgb(24_69_56/18%)]">
             <BookOpen className="size-5" strokeWidth={2.2} />
           </span>
-          <span className="font-heading text-lg font-bold tracking-[-0.03em]">
+          <span className="hidden font-heading text-lg font-bold tracking-[-0.03em] md:inline">
             Estante Aberta
           </span>
         </HardLink>
-        <HardLink
-          className={buttonVariants({
-            variant: 'outline',
-            className: 'h-10 rounded-full px-4',
-          })}
-          href={myShelfPath}
-          target="_top"
-        >
-          Minha estante
-        </HardLink>
+        <div className="flex items-center gap-2">
+          <InstallAppButton />
+          <HardLink
+            aria-label="Minha estante"
+            className={buttonVariants({
+              variant: 'outline',
+              className: 'h-10 rounded-full px-3 sm:px-4',
+            })}
+            href={myShelfPath}
+            target="_top"
+          >
+            <Library />
+            <span className="hidden sm:inline">Minha estante</span>
+          </HardLink>
+        </div>
       </header>
 
       <section className="mx-auto grid w-full max-w-6xl gap-10 px-5 pb-12 pt-8 sm:px-8 lg:grid-cols-[0.92fr_1.08fr] lg:items-center lg:pb-20 lg:pt-16">

@@ -19,6 +19,7 @@ import Image from 'next/image';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { HardLink } from '@/components/hard-link';
+import { InstallAppButton, useInstallApp } from '@/components/install-app';
 import type { Book, Shelf } from '@/db/repository';
 
 export function PublicShelf({
@@ -35,6 +36,7 @@ export function PublicShelf({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
   const [successCode, setSuccessCode] = useState('');
+  const { offerInstall } = useInstallApp();
 
   function toggle(bookId: string) {
     setError('');
@@ -65,6 +67,14 @@ export function PublicShelf({
       if (!response.ok)
         throw new Error(payload.error || 'Não foi possível enviar.');
       setSuccessCode(payload.code ?? 'OK');
+      if (
+        selected.some(
+          (bookId) =>
+            books.find((book) => book.id === bookId)?.availability === 'loan',
+        )
+      ) {
+        offerInstall('loan');
+      }
     } catch (caught) {
       setError(
         caught instanceof Error ? caught.message : 'Não foi possível enviar.',
@@ -197,15 +207,19 @@ export function PublicShelf({
         <div className="absolute -right-16 -top-28 size-72 rounded-full bg-[#f0be46]/25 blur-2xl" />
         <div className="absolute -bottom-40 -left-20 size-80 rounded-full bg-[#ef6d4e]/25 blur-3xl" />
         <div className="relative mx-auto max-w-5xl">
-          <HardLink
-            className="inline-flex items-center gap-2 text-sm font-semibold text-white/70 hover:text-white"
-            href="/"
-          >
-            <span className="grid size-8 place-items-center rounded-xl bg-white/10">
-              <ShoppingBag className="size-4" />
-            </span>
-            Estante Aberta
-          </HardLink>
+          <div className="flex items-center justify-between gap-3">
+            <HardLink
+              aria-label="Estante Aberta, início"
+              className="inline-flex items-center gap-2 text-sm font-semibold text-white/70 hover:text-white"
+              href="/"
+            >
+              <span className="grid size-8 place-items-center rounded-xl bg-white/10">
+                <ShoppingBag className="size-4" />
+              </span>
+              <span className="hidden min-[400px]:inline">Estante Aberta</span>
+            </HardLink>
+            <InstallAppButton onDark />
+          </div>
           <div className="mt-10 max-w-3xl">
             <h1 className="font-heading text-[clamp(2.8rem,9vw,5.4rem)] font-bold leading-[0.95] tracking-[-0.07em]">
               {shelf.name}

@@ -128,3 +128,9 @@
     @apply font-sans;
   }
 }
+
+@media (display-mode: standalone) {
+  .install-app-button {
+    display: none;
+  }
+}
