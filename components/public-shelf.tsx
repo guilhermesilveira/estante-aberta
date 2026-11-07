@@ -56,10 +56,12 @@ export function PublicShelf({
   books,
   shelf,
   viewerName,
+  requestAccessHref,
 }: {
   books: Book[];
   shelf: PublicShelfData;
-  viewerName: string;
+  viewerName: string | null;
+  requestAccessHref?: string;
 }) {
   const [selected, setSelected] = useState<string[]>([]);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -85,6 +87,10 @@ export function PublicShelf({
 
   async function submitRequest(event: React.SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (requestAccessHref) {
+      window.location.assign(requestAccessHref);
+      return;
+    }
     setBusy(true);
     setError('');
     try {
@@ -315,6 +321,14 @@ export function PublicShelf({
             disponíveis de {books.length}
           </p>
         </div>
+        {requestAccessHref && (
+          <p className="mb-4 text-sm text-muted-foreground">
+            Você pode ver os livros sem entrar. Para enviar um pedido,{' '}
+            {requestAccessHref.startsWith('/cadastro')
+              ? 'confirme seu nome.'
+              : 'entre na sua conta.'}
+          </p>
+        )}
         {books.length ? (
           <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 sm:gap-5 lg:grid-cols-4">
             {books.map((book, index) => {
@@ -427,9 +441,18 @@ export function PublicShelf({
             </div>
             <Button
               className="h-12 shrink-0 rounded-2xl px-5 text-base"
-              onClick={() => setShowConfirmation(true)}
+              onClick={() => {
+                if (requestAccessHref)
+                  window.location.assign(requestAccessHref);
+                else setShowConfirmation(true);
+              }}
             >
-              Pedir <Send />
+              {requestAccessHref
+                ? requestAccessHref.startsWith('/cadastro')
+                  ? 'Informar nome'
+                  : 'Entrar para pedir'
+                : 'Pedir'}{' '}
+              <Send />
             </Button>
           </div>
         </div>
