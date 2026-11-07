@@ -13,6 +13,8 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { BookCropEditor } from '@/components/book-crop-editor';
+import { OCRTitlePicker } from '@/components/ocr-title-picker';
+import type { OCRTitleLine } from '@/lib/book-recognition-types';
 import { RecognitionSettings } from '@/components/recognition-settings';
 import { NotificationPermissionDialog } from '@/components/notification-permission-dialog';
 import { Button } from '@/components/ui/button';
@@ -44,6 +46,7 @@ type Draft = {
   bounds: CropBounds;
   title: string;
   titleEdited: boolean;
+  lines?: OCRTitleLine[];
   ocr: 'pending' | 'done' | 'error';
   availability: Availability;
   saving: boolean;
@@ -296,7 +299,7 @@ export function BookUploader({
               ),
             );
         },
-        onTitle: ({ cropId, title, status }) => {
+        onTitle: ({ cropId, title, status, lines }) => {
           const draft = draftsRef.current.find(
             (item) => item.ocrKey === cropId,
           );
@@ -307,6 +310,7 @@ export function BookUploader({
                 ? {
                     ...item,
                     ocr: status === 'error' ? 'error' : 'done',
+                    lines: lines ?? item.lines,
                     title:
                       canApplySuggestedTitle(item.titleEdited, item.removed) &&
                       title
@@ -1025,6 +1029,23 @@ export function BookUploader({
                       </span>
                     )}
                   </div>
+                  {!!draft.lines?.length && (
+                    <OCRTitlePicker
+                      key={draft.ocrKey}
+                      imageUrl={draft.url}
+                      lines={draft.lines}
+                      onApply={(title) => {
+                        updateDrafts((current) =>
+                          current.map((item) =>
+                            item.id === draft.id
+                              ? { ...item, title, titleEdited: true }
+                              : item,
+                          ),
+                        );
+                        if (draft.savedId) void syncTitle(draft.id);
+                      }}
+                    />
+                  )}
                   <label
                     className="block text-sm font-medium"
                     htmlFor={`title-${draft.id}`}
@@ -1235,6 +1256,7 @@ export function BookUploader({
                           bounds,
                           url,
                           ocrKey,
+                          lines: undefined,
                           ocr: 'pending',
                           title: item.titleEdited ? item.title : '',
                         }

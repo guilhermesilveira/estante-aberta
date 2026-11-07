@@ -20,6 +20,7 @@ import type {
 } from '../lib/book-recognition-types';
 import type { ObjectDetection } from '@tensorflow-models/coco-ssd';
 import type { Worker as OCRWorker } from 'tesseract.js';
+import { selectableTitleLines } from '../lib/ocr-title-lines';
 import { validOCRLanguage } from '../lib/title-inference';
 let currentLanguage = 'por+eng';
 let ocrLanguage = '';
@@ -154,6 +155,13 @@ async function recognizeCrop(
       25_000,
       'Leitura do título',
     );
+    const bitmap = await createImageBitmap(crop.blob);
+    const lines = selectableTitleLines(
+      data.blocks,
+      bitmap.width,
+      bitmap.height,
+    );
+    bitmap.close();
     const title = suggestBookTitle(data.text, data.confidence, data.blocks);
     emit({
       type: 'title',
@@ -162,6 +170,7 @@ async function recognizeCrop(
       title,
       confidence: data.confidence,
       ocrText: data.text.slice(0, 6000),
+      lines,
       status: title ? 'suggested' : 'empty',
     });
   } catch {

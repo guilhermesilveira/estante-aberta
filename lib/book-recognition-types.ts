@@ -11,12 +11,14 @@ export type CropsEvent = {
   source: 'detector' | 'whole-photo';
   dimensions: { width: number; height: number };
 };
+export type OCRTitleLine = { id: string; text: string; bounds: BookBounds };
 export type TitleEvent = {
   photoId: string;
   cropId: string;
   title: string | null;
   confidence: number;
   ocrText?: string;
+  lines?: OCRTitleLine[];
   status: 'suggested' | 'empty' | 'error';
 };
 export type WarningEvent = { photoId: string; message: string };
