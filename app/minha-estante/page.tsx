@@ -1,5 +1,6 @@
 import { Clock3, Library, LogOut } from 'lucide-react';
 import { redirect } from 'next/navigation';
+import Link from 'next/link';
 
 import { requireChatGPTUser, chatGPTSignOutPath } from '@/app/chatgpt-auth';
 import { Brand } from '@/components/brand';
@@ -31,9 +32,7 @@ export default async function MyShelfPage() {
     getOwnerBooks(user.userId),
     getOwnerRequests(shelf.id),
   ]);
-  const pendingRequests = requests.filter(
-    (request) => request.status === 'pending',
-  ).length;
+  const pendingRequests = requests.length;
 
   return (
     <main className="min-h-dvh bg-background text-foreground">
@@ -112,10 +111,16 @@ export default async function MyShelfPage() {
               Organizar pedidos
             </p>
             <h2 className="mt-1 font-heading text-[1.75rem] font-bold tracking-[-0.045em] sm:text-3xl">
-              Pedidos recebidos
+              Pedidos pendentes
             </h2>
           </div>
           <RequestList initialRequests={requests} />
+          <Link
+            className="mt-4 inline-block text-sm font-medium underline underline-offset-4"
+            href="/minha-estante/confirmados"
+          >
+            Ver pedidos confirmados e marcar entregas
+          </Link>
         </section>
       </div>
     </main>

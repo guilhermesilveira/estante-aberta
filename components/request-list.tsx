@@ -11,6 +11,7 @@ import {
   X,
 } from 'lucide-react';
 import Image from 'next/image';
+import { useRouter } from 'next/navigation';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -26,10 +27,16 @@ const statusLabel: Record<BookRequest['status'], string> = {
 
 export function RequestList({
   initialRequests,
+  status = 'pending',
 }: {
   initialRequests: BookRequest[];
+  status?: 'pending' | 'accepted';
 }) {
-  const [requests, setRequests] = useState(initialRequests);
+  const router = useRouter();
+  const [resolvedIds, setResolvedIds] = useState<string[]>([]);
+  const requests = initialRequests.filter(
+    (request) => request.status === status && !resolvedIds.includes(request.id),
+  );
   const [selectedByRequest, setSelectedByRequest] = useState<
     Record<string, string[]>
   >(() =>
@@ -45,7 +52,12 @@ export function RequestList({
 
   function toggleBook(requestId: string, bookId: string) {
     setSelectedByRequest((current) => {
-      const selected = current[requestId] ?? [];
+      const selected =
+        current[requestId] ??
+        initialRequests
+          .find((request) => request.id === requestId)
+          ?.books.map((book) => book.id) ??
+        [];
       return {
         ...current,
         [requestId]: selected.includes(bookId)
@@ -73,19 +85,8 @@ export function RequestList({
         throw new Error(
           payload.error || 'Não foi possível atualizar o pedido.',
         );
-      setRequests((current) =>
-        current.map((request) => {
-          if (request.id !== requestId) return request;
-          return {
-            ...request,
-            status,
-            books:
-              status === 'accepted' && bookIds
-                ? request.books.filter((book) => bookIds.includes(book.id))
-                : request.books,
-          };
-        }),
-      );
+      setResolvedIds((current) => [...current, requestId]);
+      router.refresh();
     } catch (caught) {
       setError((current) => ({
         ...current,
@@ -103,9 +104,15 @@ export function RequestList({
     return (
       <div className="rounded-[22px] border border-dashed bg-card p-6 text-center sm:rounded-[24px] sm:p-7">
         <Clock3 className="mx-auto size-7 text-muted-foreground" />
-        <p className="mt-3 font-semibold">Os pedidos vão aparecer aqui</p>
+        <p className="mt-3 font-semibold">
+          {status === 'pending'
+            ? 'Nenhum pedido pendente'
+            : 'Nenhum pedido aguardando entrega'}
+        </p>
         <p className="mt-1 text-sm text-muted-foreground">
-          Depois que você compartilhar a estante.
+          {status === 'pending'
+            ? 'Novos pedidos aparecerão aqui depois que você compartilhar a estante.'
+            : 'Os pedidos confirmados aparecerão aqui até a entrega dos livros.'}
         </p>
         <TermsLink className="mt-3 inline-block text-sm text-foreground" />
       </div>
@@ -123,7 +130,8 @@ export function RequestList({
         </span>
       </p>
       {requests.map((request) => {
-        const selected = selectedByRequest[request.id] ?? [];
+        const selected =
+          selectedByRequest[request.id] ?? request.books.map((book) => book.id);
         return (
           <article
             className="scroll-mt-20 rounded-[22px] border bg-card p-4 shadow-[0_10px_30px_rgb(44_43_37/6%)] target:border-[#387c67] target:ring-4 target:ring-[#387c67]/20 sm:scroll-mt-5 sm:rounded-[24px] sm:p-5"
@@ -212,7 +220,7 @@ export function RequestList({
                 <Button
                   className="h-11 rounded-xl sm:h-9"
                   size="sm"
-                  disabled={busy === request.id || selected.length === 0}
+                  disabled={busy !== null || selected.length === 0}
                   onClick={() => updateStatus(request.id, 'accepted', selected)}
                 >
                   {busy === request.id ? (
@@ -226,7 +234,7 @@ export function RequestList({
                   className="h-11 rounded-xl sm:h-9"
                   size="sm"
                   variant="outline"
-                  disabled={busy === request.id}
+                  disabled={busy !== null}
                   onClick={() => updateStatus(request.id, 'declined')}
                 >
                   <X /> Não disponível
@@ -252,7 +260,7 @@ export function RequestList({
                 className="mt-4 h-11 w-full rounded-xl sm:h-9 sm:w-auto"
                 size="sm"
                 variant="outline"
-                disabled={busy === request.id}
+                disabled={busy !== null}
                 onClick={() => updateStatus(request.id, 'completed')}
               >
                 <PackageCheck /> Marcar como entregue

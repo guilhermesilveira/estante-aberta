@@ -279,14 +279,15 @@ export async function getOwnerBooks(userId: string): Promise<Book[]> {
 
 export async function getOwnerRequests(
   shelfId: string,
+  status: 'pending' | 'accepted' = 'pending',
 ): Promise<BookRequest[]> {
   await ensureSchema();
   const db = getRuntimeEnv().DB;
   const requestRows = await db
     .prepare(
-      'SELECT * FROM requests WHERE shelf_id = ? ORDER BY created_at ASC',
+      'SELECT * FROM requests WHERE shelf_id = ? AND status = ? ORDER BY created_at ASC',
     )
-    .bind(shelfId)
+    .bind(shelfId, status)
     .all<Record<string, unknown>>();
   const results: BookRequest[] = [];
 
