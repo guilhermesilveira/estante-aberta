@@ -67,7 +67,7 @@ async function harness() {
     },
   };
 }
-void test('capture and local recognition settings are gated behind an explicit modality choice', async () => {
+void test('capture requires an explicit modality choice and has no title recognition settings', async () => {
   const h = await harness();
   let tree = h.render();
   assert.equal(
@@ -95,7 +95,7 @@ void test('capture and local recognition settings are gated behind an explicit m
   );
   assert.equal(
     tree.some((node) => node.type === 'RecognitionSettings'),
-    true,
+    false,
   );
   let updatedChoices = tree.filter(
     (node) => node.type === 'Button' && 'aria-pressed' in node.props,
@@ -107,4 +107,27 @@ void test('capture and local recognition settings are gated behind an explicit m
     .filter((node) => node.type === 'Button' && 'aria-pressed' in node.props);
   assert.equal(updatedChoices[0].props['aria-pressed'], true);
   assert.equal(updatedChoices[1].props['aria-pressed'], false);
+});
+
+void test('manual title flow has no OCR/LLM runtime or crop re-recognition', async () => {
+  const source = await readFile(
+    new URL('../components/book-uploader.tsx', import.meta.url),
+    'utf8',
+  );
+  const worker = await readFile(
+    new URL('../workers/book-recognition.worker.ts', import.meta.url),
+    'utf8',
+  );
+  const manifest = JSON.parse(
+    await readFile(new URL('../package.json', import.meta.url), 'utf8'),
+  );
+  assert.doesNotMatch(
+    source,
+    /OCRTitlePicker|RecognitionSettings|enqueueCrop|ocrKey|titleEdited/,
+  );
+  assert.match(source, /Título \(opcional\)/);
+  assert.match(source, /title: event\.target\.value/);
+  assert.doesNotMatch(worker, /tesseract|recognizeCrop|type: 'title'/);
+  assert.equal(manifest.dependencies['tesseract.js'], undefined);
+  assert.equal(manifest.dependencies['@huggingface/transformers'], undefined);
 });

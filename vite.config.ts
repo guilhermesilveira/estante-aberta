@@ -52,15 +52,6 @@ export default defineConfig(async () => {
   const { cloudflare } = await import('@cloudflare/vite-plugin');
 
   return {
-    // ORT's public CDN runtime avoids a >25 MiB Worker asset; weights stay local.
-    resolve: {
-      conditions: [
-        'onnxruntime-web-use-extern-wasm',
-        'module',
-        'browser',
-        'development|production',
-      ],
-    },
     worker: { format: 'es' as const },
     css: { postcss: { plugins: [tailwindcss()] } },
     server: isCodexSeatbeltSandbox

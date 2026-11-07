@@ -6,7 +6,6 @@ import {
   mergeBookBounds,
   mapBookTileBounds,
   MAX_BOOK_CROPS,
-  suggestBookTitle,
   withRecognitionTimeout,
 } from '../lib/book-detection';
 import {
@@ -19,18 +18,10 @@ import type {
   RecognitionEvent,
 } from '../lib/book-recognition-types';
 import type { ObjectDetection } from '@tensorflow-models/coco-ssd';
-import type { Worker as OCRWorker } from 'tesseract.js';
-import { selectableTitleLines } from '../lib/ocr-title-lines';
-import { validOCRLanguage } from '../lib/title-inference';
-let currentLanguage = 'por+eng';
-let ocrLanguage = '';
-
 const scope = self as unknown as DedicatedWorkerGlobalScope;
 const emit = (event: RecognitionEvent) => scope.postMessage(event);
 let detector: Promise<ObjectDetection> | null = null;
-let ocr: OCRWorker | null = null;
 let detectorUnavailable = false;
-let ocrUnavailable = false;
 
 // Only public, versioned detector assets are cached. Image blobs never enter fetch.
 const originalFetch = scope.fetch.bind(scope);
@@ -80,37 +71,6 @@ async function getDetector() {
   return detector;
 }
 
-async function getOCR() {
-  if (ocr && ocrLanguage !== currentLanguage) {
-    await ocr.terminate();
-    ocr = null;
-  }
-  if (!ocr) {
-    ocrLanguage = currentLanguage;
-    const { createWorker, OEM } = await import('tesseract.js');
-    let timedOut = false;
-    const loading = createWorker(currentLanguage, OEM.LSTM_ONLY, {
-      // The library caches selected language traineddata in IndexedDB. It downloads
-      // runtime/language assets, never uploads pictures or recognized text.
-      cacheMethod: 'write',
-      errorHandler: () => {},
-    });
-    void loading.then(
-      (worker) => {
-        if (timedOut) void worker.terminate();
-      },
-      () => {},
-    );
-    try {
-      ocr = await withRecognitionTimeout(loading, 50_000, 'Preparação do OCR');
-    } catch (error) {
-      timedOut = true;
-      throw error;
-    }
-  }
-  return ocr;
-}
-
 function canvasFor(bitmap: ImageBitmap, bounds: BookBounds, maxSide: number) {
   const sx = Math.max(0, Math.round(bounds.x * bitmap.width));
   const sy = Math.max(0, Math.round(bounds.y * bitmap.height));
@@ -133,77 +93,9 @@ function canvasFor(bitmap: ImageBitmap, bounds: BookBounds, maxSide: number) {
   return canvas;
 }
 
-async function recognizeCrop(
-  photoId: string,
-  crop: { id: string; blob: Blob },
-) {
-  if (ocrUnavailable) {
-    emit({
-      type: 'title',
-      photoId,
-      cropId: crop.id,
-      title: null,
-      confidence: 0,
-      status: 'error',
-    });
-    return;
-  }
-  try {
-    const worker = await getOCR();
-    const { data } = await withRecognitionTimeout(
-      worker.recognize(crop.blob, {}, { text: true, blocks: true }),
-      25_000,
-      'Leitura do título',
-    );
-    const bitmap = await createImageBitmap(crop.blob);
-    const lines = selectableTitleLines(
-      data.blocks,
-      bitmap.width,
-      bitmap.height,
-    );
-    bitmap.close();
-    const title = suggestBookTitle(data.text, data.confidence, data.blocks);
-    emit({
-      type: 'title',
-      photoId,
-      cropId: crop.id,
-      title,
-      confidence: data.confidence,
-      ocrText: data.text.slice(0, 6000),
-      lines,
-      status: title ? 'suggested' : 'empty',
-    });
-  } catch {
-    if (ocr) {
-      void ocr.terminate();
-      ocr = null;
-    }
-    ocrUnavailable = true;
-    emit({
-      type: 'warning',
-      photoId,
-      message:
-        'Não foi possível ler o título localmente. Você pode digitá-lo na revisão.',
-    });
-    emit({
-      type: 'title',
-      photoId,
-      cropId: crop.id,
-      title: null,
-      confidence: 0,
-      status: 'error',
-    });
-  }
-}
-
-async function recognize(file: Blob, photoId: string, cropId?: string) {
+async function recognize(file: Blob, photoId: string) {
   let bitmap: ImageBitmap | null = null;
   try {
-    if (cropId) {
-      await recognizeCrop(photoId, { id: cropId, blob: file });
-      emit({ type: 'done', photoId, status: 'complete' });
-      return;
-    }
     if (file.size > 30 * 1024 * 1024) throw new Error('Imagem muito grande');
     bitmap = await createImageBitmap(file, { imageOrientation: 'from-image' });
     if (bitmap.width * bitmap.height > 50_000_000)
@@ -321,7 +213,6 @@ async function recognize(file: Blob, photoId: string, cropId?: string) {
     });
     bitmap.close();
     bitmap = null;
-    for (const crop of crops) await recognizeCrop(photoId, crop);
   } catch {
     emit({
       type: 'warning',
@@ -342,11 +233,7 @@ scope.onmessage = ({
 }: MessageEvent<{
   file: Blob;
   photoId: string;
-  cropId?: string;
-  language?: string;
 }>) => {
   // The main-thread queue dispatches only after this worker emits done.
-  currentLanguage = validOCRLanguage(data.language);
-  ocrUnavailable = false;
-  void recognize(data.file, data.photoId, data.cropId);
+  void recognize(data.file, data.photoId);
 };

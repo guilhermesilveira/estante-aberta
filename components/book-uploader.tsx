@@ -13,16 +13,12 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { BookCropEditor } from '@/components/book-crop-editor';
-import { OCRTitlePicker } from '@/components/ocr-title-picker';
-import type { OCRTitleLine } from '@/lib/book-recognition-types';
-import { RecognitionSettings } from '@/components/recognition-settings';
 import { NotificationPermissionDialog } from '@/components/notification-permission-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { createBookRecognitionQueue } from '@/lib/book-recognition';
 import { sanitizeBookTitle } from '@/lib/book-title';
 import {
-  canApplySuggestedTitle,
   MAX_CAPTURE_PHOTOS,
   validateCaptureFile,
   type CropBounds,
@@ -40,14 +36,10 @@ type Photo = {
 type Draft = {
   id: string;
   photoId: string;
-  ocrKey: string;
   blob: Blob;
   url: string;
   bounds: CropBounds;
   title: string;
-  titleEdited: boolean;
-  lines?: OCRTitleLine[];
-  ocr: 'pending' | 'done' | 'error';
   availability: Availability;
   saving: boolean;
   uploadAttempted: boolean;
@@ -128,13 +120,10 @@ export function BookUploader({
       {
         id,
         photoId,
-        ocrKey: id,
         blob: photo.file,
         url: preview(photo.file),
         bounds: wholePhoto,
         title: '',
-        titleEdited: false,
-        ocr: 'error',
         availability: photo.availability,
         saving: false,
         uploadAttempted: false,
@@ -177,7 +166,7 @@ export function BookUploader({
     }
   }
 
-  // Serialize title writes per book, then re-read the latest draft. Late OCR or an
+  // Serialize title writes per book, then re-read the latest draft. An
   // earlier request can never be the final write over a newer manual correction.
   async function syncTitle(id: string) {
     if (syncingTitles.current.has(id) || !mounted.current) return;
@@ -270,13 +259,10 @@ export function BookUploader({
               (crop): Draft => ({
                 id: crypto.randomUUID(),
                 photoId,
-                ocrKey: crop.id,
                 blob: crop.blob,
                 url: preview(crop.blob),
                 bounds: crop.bounds,
                 title: '',
-                titleEdited: false,
-                ocr: 'pending',
                 availability: photo.availability,
                 saving: false,
                 uploadAttempted: false,
@@ -298,29 +284,6 @@ export function BookUploader({
                   : item,
               ),
             );
-        },
-        onTitle: ({ cropId, title, status, lines }) => {
-          const draft = draftsRef.current.find(
-            (item) => item.ocrKey === cropId,
-          );
-          if (!draft || !mounted.current) return;
-          updateDrafts((current) =>
-            current.map((item) =>
-              item.id === draft.id
-                ? {
-                    ...item,
-                    ocr: status === 'error' ? 'error' : 'done',
-                    lines: lines ?? item.lines,
-                    title:
-                      canApplySuggestedTitle(item.titleEdited, item.removed) &&
-                      title
-                        ? title
-                        : item.title,
-                  }
-                : item,
-            ),
-          );
-          if (draft.savedId) void syncTitle(draft.id);
         },
         onWarning: ({ photoId, message }) => {
           updatePhotos((current) =>
@@ -481,11 +444,6 @@ export function BookUploader({
           : photo,
       ),
     );
-    updateDrafts((current) =>
-      current.map((draft) =>
-        draft.photoId === photoId ? { ...draft, ocr: 'done' } : draft,
-      ),
-    );
   }
 
   async function saveBook(id: string) {
@@ -612,11 +570,7 @@ export function BookUploader({
     const unsaved = draftsRef.current.filter(
       (draft) => !draft.savedId && !draft.removed,
     ).length;
-    const recognizing =
-      photosRef.current.some((photo) => !photo.done) ||
-      draftsRef.current.some(
-        (draft) => !draft.removed && draft.ocr === 'pending',
-      );
+    const recognizing = photosRef.current.some((photo) => !photo.done);
     const titleFailures = draftsRef.current.some(
       (draft) => draft.titleError || hasPendingMetadata(draft),
     );
@@ -651,7 +605,6 @@ export function BookUploader({
             !draft.removed &&
             (!draft.savedId ||
               draft.saving ||
-              draft.ocr === 'pending' ||
               draft.titleError ||
               hasPendingMetadata(draft)),
         ) ||
@@ -705,9 +658,6 @@ export function BookUploader({
   const unsaved = visible.filter((draft) => !draft.savedId).length;
   const saved = visible.filter((draft) => draft.savedId).length;
   const pendingPhotos = photos.filter((photo) => !photo.done).length;
-  const pendingTitles = visible.filter(
-    (draft) => draft.ocr === 'pending',
-  ).length;
   const editingPhoto = editing
     ? photos.find((photo) => photo.id === editing.photoId)
     : undefined;
@@ -781,14 +731,13 @@ export function BookUploader({
               Sobre o reconhecimento e a privacidade
             </summary>
             <p className="pb-2">
-              O primeiro uso baixa os modelos e pode demorar. Fotos não são
-              enviadas para serviços de IA. Confira os recortes; os títulos são
-              sugestões. Mantenha esta tela aberta até salvar.
+              O primeiro uso baixa o detector de capas e pode demorar. Fotos não
+              são enviadas para serviços de IA. Confira os recortes e digite os
+              títulos se quiser. Mantenha esta tela aberta até salvar.
             </p>
           </details>
         </>
       )}
-      {availability && screen === 'pick' && <RecognitionSettings />}
       <Input
         ref={fileInput}
         className="hidden"
@@ -853,7 +802,6 @@ export function BookUploader({
           {pendingPhotos > 0
             ? ` · ${pendingPhotos} foto(s) em processamento`
             : ''}
-          {pendingTitles > 0 ? ` · ${pendingTitles} título(s) em leitura` : ''}
         </p>
       )}
 
@@ -871,7 +819,7 @@ export function BookUploader({
               {photos.length} foto(s) guardada(s) · {visible.length} livro(s)
             </p>
             <p className="mt-1 text-sm">
-              {pendingPhotos || pendingTitles
+              {pendingPhotos
                 ? 'Reconhecimento em segundo plano. Pode fotografar a próxima.'
                 : 'Capas lado a lado, sem sobrepor.'}
             </p>
@@ -920,8 +868,8 @@ export function BookUploader({
             <div>
               <h3 className="text-xl font-bold">Confira antes de salvar</h3>
               <p className="text-sm text-muted-foreground">
-                Pode salvar sem esperar o OCR. Os títulos encontrados depois
-                serão atualizados enquanto esta tela estiver aberta.
+                Confira os recortes e preencha os títulos se quiser antes de
+                salvar.
               </p>
             </div>
             <Button
@@ -963,7 +911,7 @@ export function BookUploader({
                   </p>
                   {!photo.done && (
                     <p className="mt-1 text-sm text-muted-foreground">
-                      Detectando capas ou lendo títulos…
+                      Detectando capas…
                     </p>
                   )}
                   {photo.notice && (
@@ -1029,38 +977,17 @@ export function BookUploader({
                       </span>
                     )}
                   </div>
-                  {!!draft.lines?.length && (
-                    <OCRTitlePicker
-                      key={draft.ocrKey}
-                      imageUrl={draft.url}
-                      lines={draft.lines}
-                      onApply={(title) => {
-                        updateDrafts((current) =>
-                          current.map((item) =>
-                            item.id === draft.id
-                              ? { ...item, title, titleEdited: true }
-                              : item,
-                          ),
-                        );
-                        if (draft.savedId) void syncTitle(draft.id);
-                      }}
-                    />
-                  )}
                   <label
                     className="block text-sm font-medium"
                     htmlFor={`title-${draft.id}`}
                   >
-                    Título sugerido (opcional)
+                    Título (opcional)
                   </label>
                   <Input
                     id={`title-${draft.id}`}
                     value={draft.title}
                     maxLength={200}
-                    placeholder={
-                      draft.ocr === 'pending'
-                        ? 'Lendo no aparelho… pode seguir'
-                        : 'Sem título identificado'
-                    }
+                    placeholder="Digite o título se quiser"
                     onChange={(event) =>
                       updateDrafts((current) =>
                         current.map((item) =>
@@ -1068,7 +995,6 @@ export function BookUploader({
                             ? {
                                 ...item,
                                 title: event.target.value,
-                                titleEdited: true,
                               }
                             : item,
                         ),
@@ -1079,15 +1005,7 @@ export function BookUploader({
                     }}
                   />
                   <p className="text-xs text-muted-foreground">
-                    {draft.titleEdited
-                      ? 'Sua edição será preservada.'
-                      : draft.ocr === 'pending'
-                        ? 'OCR em segundo plano. Não é preciso esperar.'
-                        : draft.ocr === 'error'
-                          ? 'Não conseguimos ler o título. Pode deixar vazio.'
-                          : draft.title
-                            ? 'Confira a sugestão; o OCR pode confundir título e autor.'
-                            : 'Título não identificado. Pode deixar vazio.'}
+                    Você pode digitar o título ou deixar em branco.
                   </p>
                   <div className="grid grid-cols-2 gap-2">
                     <Button
@@ -1244,7 +1162,6 @@ export function BookUploader({
               );
             }
             const id = editing.draftId ?? crypto.randomUUID();
-            const ocrKey = crypto.randomUUID();
             const url = preview(blob);
             updateDrafts((current) =>
               editing.draftId
@@ -1255,10 +1172,6 @@ export function BookUploader({
                           blob,
                           bounds,
                           url,
-                          ocrKey,
-                          lines: undefined,
-                          ocr: 'pending',
-                          title: item.titleEdited ? item.title : '',
                         }
                       : item,
                   )
@@ -1267,13 +1180,10 @@ export function BookUploader({
                     {
                       id,
                       photoId: editing.photoId,
-                      ocrKey,
                       blob,
                       url,
                       bounds,
                       title: '',
-                      titleEdited: false,
-                      ocr: 'pending',
                       availability: editingPhoto.availability,
                       saving: false,
                       uploadAttempted: false,
@@ -1283,17 +1193,6 @@ export function BookUploader({
                     },
                   ],
             );
-            if (
-              !recognitionQueue().enqueueCrop(blob, {
-                photoId: `edited-${ocrKey}`,
-                cropId: ocrKey,
-              })
-            )
-              updateDrafts((current) =>
-                current.map((item) =>
-                  item.id === id ? { ...item, ocr: 'error' } : item,
-                ),
-              );
             setEditing(null);
           }}
         />

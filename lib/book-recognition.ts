@@ -3,12 +3,10 @@
 import type {
   RecognitionCallbacks,
   RecognitionEvent,
-  TitleEvent,
 } from './book-recognition-types';
 export type * from './book-recognition-types';
 
-type Job = { file: Blob; photoId: string; cropId?: string; language?: string };
-import { getOCRLanguage, refineLocalTitle } from './local-title-model.ts';
+type Job = { file: Blob; photoId: string };
 /** One worker/job at a time. No image bytes leave the browser. enqueue(false) means backpressure. */
 export function createBookRecognitionQueue(
   callbacks: RecognitionCallbacks,
@@ -23,8 +21,6 @@ export function createBookRecognitionQueue(
   let timer: ReturnType<typeof setTimeout> | undefined;
   let disposed = false;
   const jobs: Job[] = [];
-  const pendingTitles = new Set<string>();
-  const cancelled = new Set<string>();
   const maxPending = options.maxPending ?? 5;
   const timeoutMs = options.timeoutMs ?? 150_000;
 
@@ -42,15 +38,6 @@ export function createBookRecognitionQueue(
     if (!current) return;
     const photoId = current.photoId;
     clearTimeout(timer);
-    for (const cropId of pendingTitles)
-      callbacks.onTitle({
-        photoId,
-        cropId,
-        title: null,
-        confidence: 0,
-        status: 'error',
-      });
-    pendingTitles.clear();
     current = null;
     callbacks.onDone?.({ photoId, status });
     if (!disposed)
@@ -78,7 +65,6 @@ export function createBookRecognitionQueue(
   async function pump() {
     if (disposed || current || !jobs.length) return;
     current = jobs.shift()!;
-    if (current.cropId) pendingTitles.add(current.cropId);
     const job = current;
     refreshDeadline();
     try {
@@ -96,18 +82,9 @@ export function createBookRecognitionQueue(
         worker = created;
         worker.onmessage = ({ data }: MessageEvent<RecognitionEvent>) => {
           if (disposed || !current || data.photoId !== current.photoId) return;
-          if (data.type === 'crops' || data.type === 'title') refreshDeadline();
           if (data.type === 'crops') {
-            data.crops.forEach((crop) => pendingTitles.add(crop.id));
+            refreshDeadline();
             callbacks.onCrops(data);
-          } else if (data.type === 'title') {
-            pendingTitles.delete(data.cropId);
-            callbacks.onTitle(data as TitleEvent);
-            if (data.ocrText)
-              void refineLocalTitle(data.ocrText).then((title) => {
-                if (title && !disposed && !cancelled.has(data.photoId))
-                  callbacks.onTitle({ ...data, title, status: 'suggested' });
-              });
           } else if (data.type === 'warning') callbacks.onWarning?.(data);
           else finish(data.status);
         };
@@ -141,20 +118,11 @@ export function createBookRecognitionQueue(
         jobs.some((job) => job.photoId === photoId)
       )
         return false;
-      cancelled.delete(photoId);
-      jobs.push({ file, photoId, language: getOCRLanguage() });
-      void pump();
-      return true;
-    },
-    enqueueCrop(file: Blob, ids: { photoId: string; cropId: string }): boolean {
-      if (disposed || jobs.length + (current ? 1 : 0) >= maxPending)
-        return false;
-      jobs.push({ file, ...ids, language: getOCRLanguage() });
+      jobs.push({ file, photoId });
       void pump();
       return true;
     },
     cancel(photoId: string) {
-      cancelled.add(photoId);
       for (let index = jobs.length - 1; index >= 0; index--) {
         if (jobs[index].photoId === photoId) {
           jobs.splice(index, 1);

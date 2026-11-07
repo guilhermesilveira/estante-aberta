@@ -54,10 +54,3 @@ export function cropFromPoints(
     height: Math.abs(end.y - start.y),
   });
 }
-
-export function canApplySuggestedTitle(
-  manuallyEdited: boolean,
-  removed: boolean,
-): boolean {
-  return !manuallyEdited && !removed;
-}

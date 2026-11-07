@@ -10,7 +10,7 @@ export function sanitizeBookTitle(value: unknown): string {
   const title = value
     .normalize('NFC')
     .replace(/<[^>]*>/g, '')
-    // Strip intentional control and invisible formatting characters from OCR.
+    // Strip intentional control and invisible formatting characters from titles.
     .replace(
       // eslint-disable-next-line no-control-regex
       /[\u0000-\u0008\u000b\u000c\u000e-\u001f\u007f-\u009f\u200b-\u200f\u202a-\u202e\u2060-\u206f\ufeff]/g,

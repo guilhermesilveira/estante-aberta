@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
-  canApplySuggestedTitle,
   clampCrop,
   cropFromPoints,
   MAX_CAPTURE_BYTES,
@@ -64,10 +63,4 @@ void test('crop stays within image with minimum area and invalid values', () => 
     width: 0.6000000000000001,
     height: 0.8,
   });
-});
-
-void test('late OCR never overwrites a manually edited or removed title', () => {
-  assert.equal(canApplySuggestedTitle(false, false), true);
-  assert.equal(canApplySuggestedTitle(true, false), false);
-  assert.equal(canApplySuggestedTitle(false, true), false);
 });

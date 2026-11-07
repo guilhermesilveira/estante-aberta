@@ -6,7 +6,6 @@ import {
   isCompleteTileDetection,
   mergeBookBounds,
   mapBookTileBounds,
-  suggestBookTitle,
   withRecognitionTimeout,
 } from '../lib/book-detection.ts';
 import { createBookRecognitionQueue } from '../lib/book-recognition.ts';
@@ -30,16 +29,6 @@ void test('detector clips bounds and filters non-books, low confidence, tiny and
     [{ x: 0, y: 0, width: 0.5, height: 1 }],
   );
   assert.deepEqual(filterBookBounds([], 0, 100), []);
-});
-
-void test('suggestions preserve Portuguese, reject noise and low confidence', () => {
-  assert.equal(
-    suggestBookTitle('1234\nISBN 123456\n  A invenção de Hugo Cabret ', 80),
-    'A invenção de Hugo Cabret',
-  );
-  assert.equal(suggestBookTitle('Uma história', 20), null);
-  assert.equal(suggestBookTitle('Uma história', NaN), null);
-  assert.equal(suggestBookTitle('$$$\n123456\nwww.editora.com', 90), null);
 });
 
 void test('timeouts resolve, reject and do not hide original errors', async () => {
@@ -83,11 +72,9 @@ void test('queue applies backpressure, dispatches serially, cancels and ignores 
   });
   try {
     const done: string[] = [];
-    const titles: string[] = [];
     const queue = createBookRecognitionQueue(
       {
         onCrops: () => {},
-        onTitle: (event) => titles.push(event.status),
         onDone: (event) => done.push(`${event.photoId}:${event.status}`),
       },
       { maxPending: 2, workerFactory: () => new Worker('mock') },
@@ -104,7 +91,6 @@ void test('queue applies backpressure, dispatches serially, cancels and ignores 
     assert.equal(workers[0].onmessage, null);
     await new Promise((resolve) => setTimeout(resolve, 0));
     assert.equal(workers.length, 2);
-    assert.deepEqual(titles, ['error']);
     workers[1].onmessage?.({
       data: { type: 'done', photoId: 'two', status: 'complete' },
     });
@@ -116,7 +102,7 @@ void test('queue applies backpressure, dispatches serially, cancels and ignores 
   }
 });
 
-void test('queue deadline terminates hung worker and settles OCR-only job', async () => {
+void test('queue deadline terminates hung detector and settles job', async () => {
   const oldWorker = globalThis.Worker;
   let terminated = false;
   class FakeWorker {
@@ -134,23 +120,17 @@ void test('queue deadline terminates hung worker and settles OCR-only job', asyn
     value: FakeWorker,
   });
   try {
-    const titles: string[] = [];
     const done: string[] = [];
     const queue = createBookRecognitionQueue(
       {
-        onCrops: () => assert.fail('OCR-only must not emit crops'),
-        onTitle: (event) => titles.push(event.cropId),
+        onCrops: () => assert.fail('hung detector must not emit crops'),
         onDone: (event) => done.push(event.status),
       },
       { timeoutMs: 5, workerFactory: () => new Worker('mock') },
     );
-    assert.equal(
-      queue.enqueueCrop(new Blob(), { photoId: 'one', cropId: 'edited' }),
-      true,
-    );
+    assert.equal(queue.enqueue(new Blob(), 'one'), true);
     await new Promise((resolve) => setTimeout(resolve, 25));
     assert.equal(terminated, true);
-    assert.deepEqual(titles, ['edited']);
     assert.deepEqual(done, ['error']);
     queue.dispose();
   } finally {
@@ -169,92 +149,6 @@ void test('detector retains ten or more distinct covers and caps at twenty', () 
     10,
   );
   assert.equal(filterBookBounds(predictions, 1000, 1000).length, 20);
-});
-
-function ocrLine(words: [string, number][], y: number, height = 30) {
-  return {
-    text: words.map(([text]) => text).join(' '),
-    confidence: 80,
-    bbox: { x0: 0, y0: y, x1: 300, y1: y + height },
-    words: words.map(([text, confidence], index) => ({
-      text,
-      confidence,
-      bbox: { x0: index * 100, y0: y, x1: index * 100 + 90, y1: y + height },
-    })),
-  };
-}
-void test('geometric OCR joins nearby title lines and ignores small author and low-confidence decoration', () => {
-  const blocks = [
-    {
-      paragraphs: [
-        {
-          lines: [
-            ocrLine(
-              [
-                ['DP', 20],
-                ['Simgo', 40],
-              ],
-              0,
-              80,
-            ),
-            ocrLine(
-              [
-                ['O', 95],
-                ['MENINO', 95],
-              ],
-              100,
-              55,
-            ),
-            ocrLine([['MALUQUINHO', 77]], 160, 60),
-            ocrLine(
-              [
-                ['Nome', 96],
-                ['Autor', 95],
-              ],
-              250,
-              15,
-            ),
-          ],
-        },
-      ],
-    },
-  ];
-  assert.equal(suggestBookTitle('ignored', 40, blocks), 'O MENINO MALUQUINHO');
-});
-void test('geometric OCR rejects weak interior words instead of inventing missing title text', () => {
-  const blocks = [
-    {
-      paragraphs: [
-        {
-          lines: [
-            ocrLine(
-              [
-                ['EM', 36],
-                ['MENINA', 93],
-                ['BONITA', 65],
-              ],
-              100,
-              55,
-            ),
-            ocrLine(
-              [
-                ['do', 95],
-                ['ECO', 35],
-                ['de', 94],
-                ['Fifa', 77],
-              ],
-              160,
-              60,
-            ),
-          ],
-        },
-      ],
-    },
-  ];
-  assert.equal(suggestBookTitle('ignored', 49, blocks), 'MENINA BONITA');
-  assert.equal(suggestBookTitle('DP Simgo', 60), null);
-  assert.equal(suggestBookTitle('Nome do autor\nTítulo do livro', 95), null);
-  assert.equal(suggestBookTitle('DP Simgo', 95, []), null);
 });
 
 void test('zoomed detector searches the center and every edge even with no overview detections', () => {
@@ -329,4 +223,36 @@ void test('multiscale merge retains five neighboring covers and removes repeated
     ).length,
     20,
   );
+});
+
+void test('detection completes after crops without any title jobs or language payload', () => {
+  const sent: unknown[] = [];
+  const crops: string[] = [];
+  const done: string[] = [];
+  const worker = {
+    onmessage: null as null | ((event: { data: unknown }) => void),
+    onerror: null,
+    onmessageerror: null,
+    postMessage: (job: unknown) => sent.push(job),
+    terminate() {},
+  };
+  const queue = createBookRecognitionQueue(
+    {
+      onCrops: (event) => crops.push(...event.crops.map((crop) => crop.id)),
+      onDone: (event) => done.push(event.status),
+    },
+    { workerFactory: () => worker as unknown as Worker },
+  );
+  const file = new Blob();
+  queue.enqueue(file, 'photo');
+  assert.deepEqual(sent, [{ file, photoId: 'photo' }]);
+  worker.onmessage?.({
+    data: { type: 'crops', photoId: 'photo', crops: [{ id: 'cover' }] },
+  });
+  worker.onmessage?.({
+    data: { type: 'done', photoId: 'photo', status: 'complete' },
+  });
+  assert.deepEqual(crops, ['cover']);
+  assert.deepEqual(done, ['complete']);
+  queue.dispose();
 });

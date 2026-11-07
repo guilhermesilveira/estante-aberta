@@ -11,16 +11,6 @@ export type CropsEvent = {
   source: 'detector' | 'whole-photo';
   dimensions: { width: number; height: number };
 };
-export type OCRTitleLine = { id: string; text: string; bounds: BookBounds };
-export type TitleEvent = {
-  photoId: string;
-  cropId: string;
-  title: string | null;
-  confidence: number;
-  ocrText?: string;
-  lines?: OCRTitleLine[];
-  status: 'suggested' | 'empty' | 'error';
-};
 export type WarningEvent = { photoId: string; message: string };
 export type DoneEvent = {
   photoId: string;
@@ -28,12 +18,10 @@ export type DoneEvent = {
 };
 export type RecognitionCallbacks = {
   onCrops: (event: CropsEvent) => void;
-  onTitle: (event: TitleEvent) => void;
   onWarning?: (event: WarningEvent) => void;
   onDone?: (event: DoneEvent) => void;
 };
 export type RecognitionEvent =
   | ({ type: 'crops' } & CropsEvent)
-  | ({ type: 'title' } & TitleEvent)
   | ({ type: 'warning' } & WarningEvent)
   | ({ type: 'done' } & DoneEvent);
