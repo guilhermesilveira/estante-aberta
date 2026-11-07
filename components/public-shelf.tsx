@@ -345,7 +345,7 @@ export function PublicShelf({
                         sizes="(max-width: 640px) 50vw, 25vw"
                         className="object-contain transition duration-300 group-hover:scale-[1.03]"
                         src={`/api/photos/${book.photoBatchId}`}
-                        alt="Foto do livro"
+                        alt={book.title || 'Foto do livro'}
                       />
                     ) : (
                       <div
@@ -361,6 +361,11 @@ export function PublicShelf({
                     </span>
                   </div>
                   <div className="min-w-0 p-2.5 sm:p-4">
+                    {book.title && book.title !== 'Livro fotografado' && (
+                      <p className="mb-2 line-clamp-3 text-sm font-semibold">
+                        {book.title}
+                      </p>
+                    )}
                     <Badge
                       className={
                         book.status === 'loaned'

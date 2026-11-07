@@ -5,6 +5,7 @@ import {
   getOrCreateShelf,
   getRuntimeEnv,
 } from '@/db/repository';
+import { parseBookUploadId, sanitizeBookTitle } from '@/lib/book-title';
 import { stripImageMetadata } from '@/lib/photo-metadata';
 
 const acceptedImageTypes = new Set([
@@ -29,7 +30,22 @@ export async function POST(request: Request) {
     );
   }
 
-  const formData = await request.formData();
+  let formData: FormData;
+  let title: string;
+  let uploadId: string | null;
+  try {
+    formData = await request.formData();
+    title = sanitizeBookTitle(formData.get('title'));
+    uploadId = parseBookUploadId(formData.get('uploadId'));
+  } catch {
+    return Response.json(
+      {
+        error:
+          'Envio inválido. Use um título de até 200 caracteres e um identificador de envio válido.',
+      },
+      { status: 400 },
+    );
+  }
   const rawAvailability = formData.get('availability');
   const availability =
     rawAvailability === 'donation' || rawAvailability === 'loan'
@@ -60,13 +76,59 @@ export async function POST(request: Request) {
   const shelf = await getOrCreateShelf(user, profileName);
   const runtime = getRuntimeEnv();
   const db = runtime.DB;
+  const findUpload = () =>
+    db
+      .prepare(
+        'SELECT id, owner_id, photo_batch_id, status, title, availability, updated_at FROM books WHERE id = ? LIMIT 1',
+      )
+      .bind(bookId)
+      .first<{
+        id: string;
+        owner_id: string;
+        photo_batch_id: string;
+        status: string;
+        title: string;
+        availability: string;
+        updated_at: number;
+      }>();
+  const replayResponse = (existing: {
+    id: string;
+    owner_id: string;
+    photo_batch_id: string;
+    status: string;
+    title: string;
+    availability: string;
+    updated_at: number;
+  }) => {
+    if (existing.owner_id !== user.userId || existing.status === 'removed') {
+      return Response.json(
+        { error: 'Identificador de envio indisponível.' },
+        { status: 409 },
+      );
+    }
+    return Response.json(
+      {
+        bookId: existing.id,
+        photoBatchId: existing.photo_batch_id,
+        isFirstBook: false,
+        title: existing.title,
+        availability: existing.availability,
+        updatedAt: existing.updated_at,
+      },
+      { status: 200 },
+    );
+  };
+  const bookId = uploadId ?? crypto.randomUUID();
+  if (uploadId) {
+    const existing = await findUpload();
+    if (existing) return replayResponse(existing);
+  }
   const previousBook = await db
     .prepare('SELECT id FROM books WHERE owner_id = ? LIMIT 1')
     .bind(user.userId)
     .first<{ id: string }>();
   const now = Date.now();
   const photoBatchId = crypto.randomUUID();
-  const bookId = crypto.randomUUID();
   const extension =
     photo.type === 'image/png'
       ? 'png'
@@ -93,32 +155,51 @@ export async function POST(request: Request) {
     customMetadata: { shelfId: shelf.id, ownerId: user.userId },
   });
 
-  await db.batch([
-    db
-      .prepare(
-        `INSERT INTO photo_batches
+  try {
+    // D1 batches roll back together: a concurrent retry cannot create a second photo batch.
+    await db.batch([
+      db
+        .prepare(
+          `INSERT INTO photo_batches
          (id, shelf_id, owner_id, storage_key, content_type, status, book_count, created_at)
          VALUES (?, ?, ?, ?, ?, 'sanitized', 1, ?)`,
-      )
-      .bind(photoBatchId, shelf.id, user.userId, storageKey, photo.type, now),
-    db
-      .prepare(
-        `INSERT INTO books
+        )
+        .bind(photoBatchId, shelf.id, user.userId, storageKey, photo.type, now),
+      db
+        .prepare(
+          `INSERT INTO books
          (id, shelf_id, owner_id, photo_batch_id, title, author, availability, status, position, created_at, updated_at)
-         VALUES (?, ?, ?, ?, 'Livro fotografado', '', ?, 'available', 0, ?, ?)`,
-      )
-      .bind(
-        bookId,
-        shelf.id,
-        user.userId,
-        photoBatchId,
-        availability,
-        now,
-        now,
-      ),
-  ]);
+         VALUES (?, ?, ?, ?, ?, '', ?, 'available', 0, ?, ?)`,
+        )
+        .bind(
+          bookId,
+          shelf.id,
+          user.userId,
+          photoBatchId,
+          title,
+          availability,
+          now,
+          now,
+        ),
+    ]);
+  } catch (error) {
+    // A timeout may have committed. Never delete the successful attempt's photo.
+    const existing = await findUpload();
+    if (existing && existing.photo_batch_id !== photoBatchId) {
+      await runtime.FILES.delete(storageKey).catch(() => undefined);
+    }
+    if (existing && uploadId) return replayResponse(existing);
+    throw error;
+  }
   return Response.json(
-    { bookId, photoBatchId, isFirstBook: !previousBook },
+    {
+      bookId,
+      photoBatchId,
+      isFirstBook: !previousBook,
+      title,
+      availability,
+      updatedAt: now,
+    },
     { status: 201 },
   );
 }

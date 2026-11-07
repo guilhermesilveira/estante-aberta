@@ -161,7 +161,7 @@ export function OwnerLibrary({
                       sizes="(max-width: 640px) 100vw, 33vw"
                       className="object-contain"
                       src={`/api/photos/${book.photoBatchId}`}
-                      alt="Foto do livro"
+                      alt={book.title || 'Foto do livro'}
                     />
                   ) : (
                     <div className="grid size-full place-items-center bg-[#387c67] text-white">
@@ -170,6 +170,9 @@ export function OwnerLibrary({
                   )}
                 </div>
                 <div className="p-4">
+                  {book.title && book.title !== 'Livro fotografado' && (
+                    <h3 className="mb-3 font-semibold">{book.title}</h3>
+                  )}
                   {statusLabel && (
                     <p className="mb-3 text-xs font-semibold text-muted-foreground">
                       {statusLabel}

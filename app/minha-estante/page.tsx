@@ -72,7 +72,8 @@ export default async function MyShelfPage() {
               Minha estante
             </h1>
             <p className="mt-3 max-w-xl text-muted-foreground">
-              Fotografe um livro e escolha entre doação ou empréstimo.
+              Fotografe uma ou várias capas de uma vez e escolha entre doação ou
+              empréstimo.
             </p>
           </div>
           <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
