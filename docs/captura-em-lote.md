@@ -49,3 +49,23 @@ O lote é temporário: mantenha a tela aberta. Há aviso antes de sair com fotos
 - Testes do componente exercitam cinco áreas, seleção pelos botões e pelos overlays, novo livro, confirmação de descarte e proteção dos recortes já enviados.
 - Também verificados 390×844 (ações até y=832) e paisagem 844×390 (ações até y=374). Selecionar Livro 2, ajustar e aplicar gerou blob de 16.464 bytes; reabrir, Novo e Adicionar preservou anteriores e aumentou de cinco para seis áreas.
 - Integração completa no uploader não concluída nesta rodada: upload foi iniciado, mas o preview foi interrompido por reinício/overlay do Vite. A validação visual/funcional acima usou um harness temporário do componente real, removido antes do build. Nenhuma gravação em produção.
+
+## Preparação e títulos locais (7 de novembro de 2026)
+
+- O primeiro passo exige escolher empréstimo ou doação; fotos e recortes herdam essa escolha e podem ser alterados individualmente. A escolha não muda retroativamente fotos já capturadas.
+- O editor prioriza a foto e mantém os sliders em **Ajustes precisos**, recolhido por padrão.
+- Minha estante oferece cards e tabela com preferência local. Os dois modos mantêm as mesmas ações e estados.
+- **Leitura de títulos e idiomas**, no preparo, permite escolher o OCR das próximas fotos. Português/inglês são o padrão; espanhol, francês, alemão, italiano, japonês, chinês simplificado, coreano, árabe e russo são opções sob demanda. Não há detecção automática de idioma.
+- A IA opcional usa Transformers.js 4.3.2 e Qwen3.5-0.8B-Text-ONNX (Apache 2.0), export ONNX q4f16 fixado na revisão `25cdf33f386b487a25f3d743e86442517bdb77ff`. Só o modelo pesa 470 MB, além de tokenizer/runtime. O botão avisa aproximadamente 500 MB e recomenda Wi-Fi. Recursos sem WebGPU continuam com OCR e revisão manual.
+- A IA recebe apenas linhas OCR no Worker local. O resultado só é aceito se corresponder a um grupo de até quatro linhas consecutivas do OCR; o código usa o texto original, sem aceitar palavras inventadas. Limites: 32 linhas, 160 caracteres por linha, 4 linhas de título, 200 caracteres no título, 64 tokens gerados, fila de até 20 sugestões e 20 segundos por inferência. Download/preparação limitado a 180 segundos, com cancelamento real do Worker. Baixar/ativar é sempre uma ação explícita.
+- Não existe fallback de IA remota. Fotos e texto não são enviados ao provedor do modelo. O download de arquivos públicos usa Hugging Face/CDN e cache do navegador; limpar os dados do site remove esse cache. Desativar encerra o Worker e libera memória, mas preserva cache.
+- Uma sugestão de IA pode chegar depois do OCR e atualizar um título não editado. Correções manuais, recortes substituídos, fotos canceladas e desmontagem da tela continuam protegidos contra resultados atrasados.
+- A inferência é experimental e não garante escolha correta. Títulos curtos em outros alfabetos não são mais descartados apenas pelo número de letras. Capas sem leitura confiável devem ser revisadas manualmente.
+- Fontes de modelo/licença/tamanho: https://huggingface.co/Qwen/Qwen3.5-0.8B e https://huggingface.co/onnx-community/Qwen3.5-0.8B-Text-ONNX/tree/main/onnx.
+
+### Validação desta revisão
+
+- 66 testes automatizados passaram, além de TypeScript, lint e build; cobertura nova para modalidade explícita, cards/tabela, títulos curtos/numéricos e rejeição de texto de IA ausente do OCR.
+- Avaliação real do Qwen3.5 0,8B no Mac mini via ONNX CPU, usando cinco transcrições sintéticas de capas conhecidas: três títulos corretos aceitos (inglês, francês e japonês), duas respostas rejeitadas por não corresponderem ao OCR (português e título numérico). É uma verificação funcional pequena, não uma taxa de precisão representativa. Qwen2.5 0,5B e Qwen3 0,6B foram descartados após resultados inferiores nessa tarefa.
+- QA Chrome em 360×640 confirmou a escolha inicial de modalidade, abertura das opções, erro/fallback da IA e importação para revisão. A conexão do navegador depois ficou indisponível; IAB também indisponível. O wrapper do Worker foi corrigido após a primeira tentativa, e seus assets de produção retornaram HTTP 200.
+- Inferência WebGPU ponta a ponta no navegador, funcionamento em celulares físicos e revisão visual final do editor permanecem não verificados. A IA é opcional/experimental, exige WebGPU com shader-f16 antes de baixar pesos e nunca bloqueia o cadastro manual.

@@ -16,6 +16,7 @@ export type TitleEvent = {
   cropId: string;
   title: string | null;
   confidence: number;
+  ocrText?: string;
   status: 'suggested' | 'empty' | 'error';
 };
 export type WarningEvent = { photoId: string; message: string };

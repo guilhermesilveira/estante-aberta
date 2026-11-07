@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import Image from 'next/image';
 import { BookCropEditor } from '@/components/book-crop-editor';
+import { RecognitionSettings } from '@/components/recognition-settings';
 import { NotificationPermissionDialog } from '@/components/notification-permission-dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -64,7 +65,7 @@ export function BookUploader({
   const [screen, setScreen] = useState<'pick' | 'camera' | 'review'>('pick');
   const [photos, setPhotos] = useState<Photo[]>([]);
   const [drafts, setDrafts] = useState<Draft[]>([]);
-  const [availability, setAvailability] = useState<Availability>('loan');
+  const [availability, setAvailability] = useState<Availability | null>(null);
   const [openingCamera, setOpeningCamera] = useState(false);
   const [takingPhoto, setTakingPhoto] = useState(false);
   const [savingBatch, setSavingBatch] = useState(false);
@@ -340,6 +341,10 @@ export function BookUploader({
   }
 
   function addPhoto(file: File) {
+    if (!availability) {
+      setError('Escolha empréstimo ou doação antes de adicionar fotos.');
+      return;
+    }
     const rejection = validateCaptureFile(file, {
       count: photosRef.current.length,
       bytes: photosRef.current.reduce((sum, photo) => sum + photo.file.size, 0),
@@ -373,6 +378,10 @@ export function BookUploader({
   }
 
   async function openCamera() {
+    if (!availability) {
+      setError('Escolha empréstimo ou doação antes de abrir a câmera.');
+      return;
+    }
     stopCamera();
     setError('');
     if (!navigator.mediaDevices?.getUserMedia) {
@@ -715,37 +724,67 @@ export function BookUploader({
         Adicionar livros
       </p>
       <h2 className="mt-1 font-heading text-2xl font-bold">
-        Uma foto, várias capas
+        {availability
+          ? 'Uma foto, várias capas'
+          : 'Como você quer compartilhar?'}
       </h2>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Deixe as capas visíveis, lado a lado, sem sobrepor. Você pode continuar
-        fotografando enquanto separamos as capas e tentamos ler os títulos no
-        próprio aparelho.
-      </p>
-      <p className="mt-2 text-xs text-muted-foreground">
-        O primeiro uso baixa os modelos e pode demorar. Fotos não são enviadas
-        para serviços de IA. Confira os recortes; os títulos são sugestões.
-        Mantenha esta tela aberta até salvar.
-      </p>
-      <div className="mt-4 flex flex-wrap items-center gap-2">
-        <span className="text-sm font-medium">Novos livros:</span>
-        <Button
-          size="sm"
-          variant={availability === 'loan' ? 'default' : 'outline'}
-          onClick={() => setAvailability('loan')}
-          aria-pressed={availability === 'loan'}
-        >
-          <Handshake /> Empréstimo
-        </Button>
-        <Button
-          size="sm"
-          variant={availability === 'donation' ? 'default' : 'outline'}
-          onClick={() => setAvailability('donation')}
-          aria-pressed={availability === 'donation'}
-        >
-          <Gift /> Doação
-        </Button>
-      </div>
+      <fieldset className="mt-4">
+        <legend className="text-sm font-medium">
+          {availability
+            ? 'Modalidade das próximas fotos'
+            : 'Primeiro, escolha a modalidade deste lote'}
+        </legend>
+        <div className="mt-2 grid grid-cols-2 gap-3 sm:max-w-md">
+          <Button
+            className="h-14"
+            variant={availability === 'loan' ? 'default' : 'outline'}
+            onClick={() => {
+              setAvailability('loan');
+              setError('');
+            }}
+            aria-pressed={availability === 'loan'}
+            disabled={openingCamera}
+          >
+            <Handshake /> Empréstimo
+          </Button>
+          <Button
+            className="h-14"
+            variant={availability === 'donation' ? 'default' : 'outline'}
+            onClick={() => {
+              setAvailability('donation');
+              setError('');
+            }}
+            aria-pressed={availability === 'donation'}
+            disabled={openingCamera}
+          >
+            <Gift /> Doação
+          </Button>
+        </div>
+        <p className="mt-2 text-xs text-muted-foreground">
+          {photos.length
+            ? 'A mudança vale só para novas fotos. Os livros deste lote mantêm sua modalidade.'
+            : 'A escolha vale para as fotos que você adicionar. Você pode ajustar cada livro na revisão.'}
+        </p>
+      </fieldset>
+      {availability && (
+        <>
+          <p className="mt-4 text-sm text-muted-foreground">
+            Deixe as capas lado a lado, sem sobrepor. Você pode continuar
+            fotografando enquanto preparamos os livros no aparelho.
+          </p>
+          <details className="mt-2 text-xs text-muted-foreground">
+            <summary className="cursor-pointer py-2">
+              Sobre o reconhecimento e a privacidade
+            </summary>
+            <p className="pb-2">
+              O primeiro uso baixa os modelos e pode demorar. Fotos não são
+              enviadas para serviços de IA. Confira os recortes; os títulos são
+              sugestões. Mantenha esta tela aberta até salvar.
+            </p>
+          </details>
+        </>
+      )}
+      {availability && screen === 'pick' && <RecognitionSettings />}
       <Input
         ref={fileInput}
         className="hidden"
@@ -759,38 +798,40 @@ export function BookUploader({
           setScreen('review');
         }}
       />
-      <div className="mt-4 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
-        <Button
-          className="h-12"
-          disabled={openingCamera || photos.length >= MAX_CAPTURE_PHOTOS}
-          onClick={() => void openCamera()}
-        >
-          <Camera /> {openingCamera ? 'Abrindo…' : 'Abrir câmera'}
-        </Button>
-        <Button
-          className="h-12"
-          variant="outline"
-          disabled={photos.length >= MAX_CAPTURE_PHOTOS}
-          onClick={() => fileInput.current?.click()}
-        >
-          <FileUp /> Enviar fotos
-        </Button>
-        {openingCamera && (
-          <Button variant="ghost" onClick={stopCamera}>
-            Cancelar abertura
-          </Button>
-        )}
-        {photos.length > 0 && (
+      {availability && (
+        <div className="mt-4 grid grid-cols-2 gap-3 sm:flex sm:flex-wrap">
           <Button
-            className="col-span-2 h-12"
-            variant="outline"
-            onClick={review}
+            className="h-12"
+            disabled={openingCamera || photos.length >= MAX_CAPTURE_PHOTOS}
+            onClick={() => void openCamera()}
           >
-            Revisar {visible.length || photos.length}{' '}
-            {visible.length ? 'livros' : 'fotos'}
+            <Camera /> {openingCamera ? 'Abrindo…' : 'Abrir câmera'}
           </Button>
-        )}
-      </div>
+          <Button
+            className="h-12"
+            variant="outline"
+            disabled={photos.length >= MAX_CAPTURE_PHOTOS}
+            onClick={() => fileInput.current?.click()}
+          >
+            <FileUp /> Enviar fotos
+          </Button>
+          {openingCamera && (
+            <Button variant="ghost" onClick={stopCamera}>
+              Cancelar abertura
+            </Button>
+          )}
+          {photos.length > 0 && (
+            <Button
+              className="col-span-2 h-12"
+              variant="outline"
+              onClick={review}
+            >
+              Revisar {visible.length || photos.length}{' '}
+              {visible.length ? 'livros' : 'fotos'}
+            </Button>
+          )}
+        </div>
+      )}
       {notice && (
         <output className="mt-3 block text-sm text-[#275b4b]">{notice}</output>
       )}

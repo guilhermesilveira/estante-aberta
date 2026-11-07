@@ -149,7 +149,7 @@ function cleanTitleText(text: string) {
 function plausibleTitle(text: string) {
   const letters = text.match(/\p{L}/gu)?.length ?? 0;
   return (
-    letters >= 4 &&
+    letters >= 1 &&
     text.length <= 120 &&
     letters / text.length > 0.55 &&
     !/^(isbn|www\.|https?:|editora\b|edição\b|copyright\b|ilustrações\b|ilustrado\b|tradução\b|autor[a]?\b)/i.test(
@@ -231,9 +231,9 @@ export function suggestBookTitle(
       group.length < 4 &&
       Math.max(previous.height, line.height) /
         Math.min(previous.height, line.height) <=
-        1.7 &&
+        1.35 &&
       line.bbox.y0 - previous.bbox.y1 <=
-        Math.max(previous.height, line.height) * 1.2 &&
+        Math.max(previous.height, line.height) * 0.8 &&
       overlap / width >= 0.3
     )
       group.push(line);

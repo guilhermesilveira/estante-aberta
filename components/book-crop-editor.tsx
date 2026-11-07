@@ -131,9 +131,8 @@ export function BookCropEditor({
             ? `Ajustar livro ${regions.findIndex((region) => region.id === selectedId) + 1}`
             : 'Marcar novo livro'}
         </h3>
-        <p className="text-sm text-white/75">
-          Toque em um número para escolher um livro. Arraste para ajustar a área
-          ou use os controles.
+        <p className="shrink-0 text-xs text-white/65">
+          Arraste na foto para marcar a capa.
         </p>
         <div className="flex shrink-0 gap-2 pb-1" aria-label="Livros marcados">
           <div className="flex min-w-0 flex-1 gap-2 overflow-x-auto">
@@ -143,11 +142,13 @@ export function BookCropEditor({
                 type="button"
                 disabled={busy}
                 aria-pressed={region.id === selectedId}
+                aria-label={`Livro ${index + 1}: ${region.label}${region.locked ? ' · salvo' : ''}`}
+                title={region.label}
                 onClick={() => select(region.id)}
                 className={`min-h-10 shrink-0 rounded-lg border px-3 text-sm ${region.id === selectedId ? 'border-[#f0be46] bg-[#f0be46] text-black' : 'border-white/40'}`}
               >
-                {index + 1}. {region.label}
-                {region.locked ? ' · salvo' : ''}
+                {index + 1}
+                {region.locked ? ' ✓' : ''}
               </button>
             ))}
           </div>
@@ -305,37 +306,42 @@ export function BookCropEditor({
             Este recorte está protegido porque já foi enviado.
           </p>
         )}
-        <div className="grid shrink-0 grid-cols-2 gap-x-3 gap-y-1">
-          {(
-            [
-              ['x', 'Esquerda'],
-              ['y', 'Topo'],
-              ['width', 'Largura'],
-              ['height', 'Altura'],
-            ] as const
-          ).map(([key, label]) => (
-            <label className="text-sm" key={key}>
-              {label}: {Math.round(bounds[key] * 100)}%
-              <input
-                className="block h-6 w-full accent-[#f0be46]"
-                type="range"
-                min={key === 'x' || key === 'y' ? 0 : 3}
-                max="100"
-                step="1"
-                disabled={busy || locked}
-                value={Math.round(bounds[key] * 100)}
-                onChange={(event) =>
-                  setBounds(
-                    clampCrop({
-                      ...bounds,
-                      [key]: Number(event.target.value) / 100,
-                    }),
-                  )
-                }
-              />
-            </label>
-          ))}
-        </div>
+        <details className="shrink-0 rounded-xl border border-white/15 px-3">
+          <summary className="cursor-pointer py-3 text-sm text-white/80">
+            Ajustes precisos
+          </summary>
+          <div className="grid grid-cols-2 gap-x-3 gap-y-2 pb-3">
+            {(
+              [
+                ['x', 'Esquerda'],
+                ['y', 'Topo'],
+                ['width', 'Largura'],
+                ['height', 'Altura'],
+              ] as const
+            ).map(([key, label]) => (
+              <label className="text-sm" key={key}>
+                {label}: {Math.round(bounds[key] * 100)}%
+                <input
+                  className="block h-6 w-full accent-[#f0be46]"
+                  type="range"
+                  min={key === 'x' || key === 'y' ? 0 : 3}
+                  max="100"
+                  step="1"
+                  disabled={busy || locked}
+                  value={Math.round(bounds[key] * 100)}
+                  onChange={(event) =>
+                    setBounds(
+                      clampCrop({
+                        ...bounds,
+                        [key]: Number(event.target.value) / 100,
+                      }),
+                    )
+                  }
+                />
+              </label>
+            ))}
+          </div>
+        </details>
         {error && <p role="alert">{error}</p>}
         <div className="flex shrink-0 gap-3">
           <Button

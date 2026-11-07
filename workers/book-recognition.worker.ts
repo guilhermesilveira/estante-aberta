@@ -20,6 +20,9 @@ import type {
 } from '../lib/book-recognition-types';
 import type { ObjectDetection } from '@tensorflow-models/coco-ssd';
 import type { Worker as OCRWorker } from 'tesseract.js';
+import { validOCRLanguage } from '../lib/title-inference';
+let currentLanguage = 'por+eng';
+let ocrLanguage = '';
 
 const scope = self as unknown as DedicatedWorkerGlobalScope;
 const emit = (event: RecognitionEvent) => scope.postMessage(event);
@@ -77,11 +80,16 @@ async function getDetector() {
 }
 
 async function getOCR() {
+  if (ocr && ocrLanguage !== currentLanguage) {
+    await ocr.terminate();
+    ocr = null;
+  }
   if (!ocr) {
+    ocrLanguage = currentLanguage;
     const { createWorker, OEM } = await import('tesseract.js');
     let timedOut = false;
-    const loading = createWorker('por', OEM.LSTM_ONLY, {
-      // The library caches Portuguese traineddata in IndexedDB. It downloads
+    const loading = createWorker(currentLanguage, OEM.LSTM_ONLY, {
+      // The library caches selected language traineddata in IndexedDB. It downloads
       // runtime/language assets, never uploads pictures or recognized text.
       cacheMethod: 'write',
       errorHandler: () => {},
@@ -153,6 +161,7 @@ async function recognizeCrop(
       cropId: crop.id,
       title,
       confidence: data.confidence,
+      ocrText: data.text.slice(0, 6000),
       status: title ? 'suggested' : 'empty',
     });
   } catch {
@@ -321,7 +330,14 @@ async function recognize(file: Blob, photoId: string, cropId?: string) {
 
 scope.onmessage = ({
   data,
-}: MessageEvent<{ file: Blob; photoId: string; cropId?: string }>) => {
+}: MessageEvent<{
+  file: Blob;
+  photoId: string;
+  cropId?: string;
+  language?: string;
+}>) => {
   // The main-thread queue dispatches only after this worker emits done.
+  currentLanguage = validOCRLanguage(data.language);
+  ocrUnavailable = false;
   void recognize(data.file, data.photoId, data.cropId);
 };

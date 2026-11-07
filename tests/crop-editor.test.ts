@@ -173,3 +173,16 @@ void test('sent crop remains visible and selectable but cannot change geometry o
     .props.onClick();
   assert.deepEqual(h.selected, [undefined]);
 });
+
+void test('precise controls are collapsed by default and numbered books retain accessible names', async () => {
+  const h = await harness();
+  const tree = h.render();
+  const details = tree.find((node) => node.type === 'details');
+  assert.ok(details);
+  assert.equal(details.props.open, undefined);
+  assert.equal(tree.filter((node) => node.type === 'input').length, 4);
+  const choices = tree.filter(
+    (node) => node.type === 'button' && 'aria-pressed' in node.props,
+  );
+  assert.equal(choices[0].props['aria-label'], 'Livro 1: Livro 1');
+});
