@@ -1,12 +1,18 @@
 /// <reference lib="webworker" />
 import {
   filterBookBounds,
-  chooseBookSearchTile,
+  chooseBookSearchTiles,
+  isCompleteTileDetection,
+  mergeBookBounds,
   mapBookTileBounds,
   MAX_BOOK_CROPS,
   suggestBookTitle,
   withRecognitionTimeout,
 } from '../lib/book-detection';
+import {
+  findIsolatedCoverBounds,
+  combineCoverBounds,
+} from '../lib/book-contours';
 import type {
   BookBounds,
   BookCrop,
@@ -203,12 +209,14 @@ async function recognize(file: Blob, photoId: string, cropId?: string) {
           );
           try {
             const predictions = await withRecognitionTimeout(
-              model.detect(tensor, MAX_BOOK_CROPS, 0.45),
+              model.detect(tensor, MAX_BOOK_CROPS, 0.4),
               20_000,
               'Detecção de capas',
             );
             return mapBookTileBounds(
-              filterBookBounds(predictions, canvas.width, canvas.height),
+              filterBookBounds(predictions, canvas.width, canvas.height).filter(
+                (box) => isCompleteTileDetection(box, tile),
+              ),
               tile,
             );
           } finally {
@@ -216,28 +224,34 @@ async function recognize(file: Blob, photoId: string, cropId?: string) {
           }
         };
         bounds = await detectTile(fullBounds);
-        const searchTile = chooseBookSearchTile(bounds);
-        if (searchTile) {
+        // Bound CPU work on phones. Each pass is serial and optional; preserve
+        // all previous results if the next inference fails or times out.
+        const searchStarted = performance.now();
+        for (const searchTile of chooseBookSearchTiles(
+          bitmap.width,
+          bitmap.height,
+        )) {
+          if (bounds.length >= MAX_BOOK_CROPS) break;
+          if (performance.now() - searchStarted >= 25_000) {
+            emit({
+              type: 'warning',
+              photoId,
+              message:
+                'A busca ampliada atingiu o limite de tempo. Confira as áreas marcadas e adicione capas que faltaram.',
+            });
+            break;
+          }
           try {
             const extra = await detectTile(searchTile);
-            // Run normalized-space NMS again so overlap cannot create duplicate drafts.
-            bounds = filterBookBounds(
-              [...bounds, ...extra].map((box) => ({
-                class: 'book',
-                score: 1,
-                bbox: [box.x, box.y, box.width, box.height],
-              })),
-              1,
-              1,
-            );
+            bounds = mergeBookBounds([...bounds, ...extra]);
           } catch {
-            // A failed optional pass must not discard covers found in the first pass.
             emit({
               type: 'warning',
               photoId,
               message:
                 'Algumas capas podem não ter sido separadas. Confira a foto original na revisão.',
             });
+            break;
           }
         }
       } catch {
@@ -246,10 +260,29 @@ async function recognize(file: Blob, photoId: string, cropId?: string) {
           type: 'warning',
           photoId,
           message:
-            'A separação automática não ficou disponível. A foto inteira foi mantida para revisão.',
+            'O modelo de reconhecimento não ficou disponível. Revise as áreas sugeridas ou marque as capas manualmente.',
         });
       }
     }
+    // Complement the generic model only on plain backgrounds with separated,
+    // rectangular covers. All pixels stay in this worker.
+    const outlineCanvas = canvasFor(bitmap, fullBounds, 640);
+    const outlinePixels = outlineCanvas
+      .getContext('2d')!
+      .getImageData(0, 0, outlineCanvas.width, outlineCanvas.height);
+    const outlines = findIsolatedCoverBounds(
+      outlinePixels.data,
+      outlineCanvas.width,
+      outlineCanvas.height,
+    );
+    if (outlines.length)
+      emit({
+        type: 'warning',
+        photoId,
+        message:
+          'Áreas sugeridas pelas bordas da foto. Confira os recortes e ajuste qualquer capa incompleta.',
+      });
+    bounds = mergeBookBounds(combineCoverBounds(outlines, bounds));
     const source = bounds.length ? 'detector' : 'whole-photo';
     if (!bounds.length) bounds = [fullBounds];
     const crops: BookCrop[] = [];

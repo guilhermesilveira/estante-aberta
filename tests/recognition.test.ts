@@ -2,7 +2,9 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 import {
   filterBookBounds,
-  chooseBookSearchTile,
+  chooseBookSearchTiles,
+  isCompleteTileDetection,
+  mergeBookBounds,
   mapBookTileBounds,
   suggestBookTitle,
   withRecognitionTimeout,
@@ -17,6 +19,7 @@ void test('detector clips bounds and filters non-books, low confidence, tiny and
         { class: 'book', score: 0.9, bbox: [-10, -20, 60, 120] },
         { class: 'person', score: 1, bbox: [0, 0, 100, 100] },
         { class: 'book', score: 0.1, bbox: [0, 0, 100, 100] },
+        { class: 'book', score: NaN, bbox: [0, 0, 100, 100] },
         { class: 'book', score: 0.9, bbox: [50, 50, 1, 1] },
         { class: 'book', score: 0.9, bbox: [NaN, 0, 100, 100] },
         { class: 'book', score: 0.9, bbox: [200, 200, 100, 100] },
@@ -254,22 +257,76 @@ void test('geometric OCR rejects weak interior words instead of inventing missin
   assert.equal(suggestBookTitle('DP Simgo', 95, []), null);
 });
 
-void test('second detector pass searches substantial uncovered side and maps back to original', () => {
-  const tile = chooseBookSearchTile([
-    { x: 0.11, y: 0.07, width: 0.32, height: 0.8 },
-  ]);
-  assert.ok(tile);
-  assert.ok(Math.abs(tile.x - 0.39) < 0.0001);
-  assert.equal(tile.height, 1);
-  const mapped = mapBookTileBounds(
-    [{ x: 0.2, y: 0.1, width: 0.5, height: 0.8 }],
-    tile,
+void test('zoomed detector searches the center and every edge even with no overview detections', () => {
+  const tiles = chooseBookSearchTiles(1500, 700);
+  assert.equal(tiles.length, 3);
+  for (const x of [0.02, 0.22, 0.42, 0.62, 0.8])
+    assert.ok(
+      tiles.some((tile) => tile.x <= x && tile.x + tile.width >= x + 0.17),
+    );
+  assert.equal(chooseBookSearchTiles(700, 1500).length, 3);
+  assert.equal(chooseBookSearchTiles(1000, 1000).length, 4);
+  assert.deepEqual(chooseBookSearchTiles(0, 1000), []);
+  assert.deepEqual(
+    mapBookTileBounds([{ x: 0.2, y: 0.1, width: 0.5, height: 0.8 }], tiles[1]),
+    [{ x: 0.35, y: 0.1, width: 0.25, height: 0.8 }],
   );
-  assert.ok(Math.abs(mapped[0].x - 0.512) < 0.0001);
-  assert.ok(Math.abs(mapped[0].width - 0.305) < 0.0001);
-  assert.equal(chooseBookSearchTile([]), null);
+});
+
+void test('tile boundaries reject cut fragments but allow original photo edges', () => {
+  const middle = chooseBookSearchTiles(1500, 700)[1];
   assert.equal(
-    chooseBookSearchTile([{ x: 0.1, y: 0.1, width: 0.8, height: 0.8 }]),
-    null,
+    isCompleteTileDetection({ x: 0, y: 0.2, width: 0.4, height: 0.6 }, middle),
+    false,
+  );
+  assert.equal(
+    isCompleteTileDetection(
+      { x: 0.6, y: 0.2, width: 0.4, height: 0.6 },
+      middle,
+    ),
+    false,
+  );
+  assert.equal(
+    isCompleteTileDetection({ x: 0.2, y: 0, width: 0.4, height: 1 }, middle),
+    true,
+  );
+  assert.equal(
+    isCompleteTileDetection(
+      { x: 0, y: 0, width: 1, height: 1 },
+      { x: 0, y: 0, width: 1, height: 1 },
+    ),
+    true,
+  );
+});
+
+void test('multiscale merge retains five neighboring covers and removes repeated and inset boxes', () => {
+  const covers = Array.from({ length: 5 }, (_, i) => ({
+    x: i * 0.2,
+    y: 0.1,
+    width: 0.18,
+    height: 0.8,
+  }));
+  const inset = covers.map((box) => ({
+    x: box.x + 0.01,
+    y: box.y + 0.05,
+    width: box.width - 0.02,
+    height: box.height - 0.1,
+  }));
+  assert.equal(mergeBookBounds([...covers, ...covers, ...inset]).length, 5);
+  assert.equal(
+    mergeBookBounds([...covers.slice(0, 2), ...covers.slice(3), covers[2]])
+      .length,
+    5,
+  );
+  assert.equal(
+    mergeBookBounds(
+      Array.from({ length: 30 }, (_, i) => ({
+        x: i,
+        y: 0,
+        width: 0.5,
+        height: 0.8,
+      })),
+    ).length,
+    20,
   );
 });

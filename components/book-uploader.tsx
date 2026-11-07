@@ -9,7 +9,6 @@ import {
   Gift,
   Handshake,
   LoaderCircle,
-  Plus,
   Trash2,
 } from 'lucide-react';
 import Image from 'next/image';
@@ -935,9 +934,16 @@ export function BookUploader({
                         !photo.done &&
                         !drafts.some((draft) => draft.photoId === photo.id)
                       }
-                      onClick={() => setEditing({ photoId: photo.id })}
+                      onClick={() =>
+                        setEditing({
+                          photoId: photo.id,
+                          draftId: visible.find(
+                            (draft) => draft.photoId === photo.id,
+                          )?.id,
+                        })
+                      }
                     >
-                      <Plus /> Adicionar recorte
+                      <Crop /> Revisar áreas / adicionar
                     </Button>
                     {!photo.done && (
                       <Button
@@ -1138,7 +1144,25 @@ export function BookUploader({
       )}
       {editingPhoto && editing && (
         <BookCropEditor
+          key={`${editing.photoId}-${editing.draftId ?? 'new'}`}
           sourceUrl={editingPhoto.url}
+          selectedId={editing.draftId}
+          onSelect={(draftId) =>
+            setEditing({ photoId: editing.photoId, draftId })
+          }
+          regions={visible
+            .filter((draft) => draft.photoId === editing.photoId)
+            .map((draft) => ({
+              id: draft.id,
+              bounds: draft.bounds,
+              label: draft.title || `Livro ${visible.indexOf(draft) + 1}`,
+              locked: Boolean(
+                draft.savedId ||
+                draft.uploadAttempted ||
+                draft.saving ||
+                savingBatch,
+              ),
+            }))}
           initialBounds={editingDraft?.bounds ?? wholePhoto}
           onCancel={() => setEditing(null)}
           onSave={(blob, bounds) => {

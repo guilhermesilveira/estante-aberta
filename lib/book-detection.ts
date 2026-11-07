@@ -2,32 +2,65 @@ import type { BookBounds } from './book-recognition-types';
 
 export const MAX_BOOK_CROPS = 20;
 
-/** One extra inference on the largest unexplored strip, only when it is substantial. */
-export function chooseBookSearchTile(bounds: BookBounds[]): BookBounds | null {
-  if (!bounds.length || bounds.length >= MAX_BOOK_CROPS) return null;
-  const left = Math.min(...bounds.map((box) => box.x));
-  const top = Math.min(...bounds.map((box) => box.y));
-  const right = Math.max(...bounds.map((box) => box.x + box.width));
-  const bottom = Math.max(...bounds.map((box) => box.y + box.height));
-  const strips = [
-    { x: 0, y: 0, width: left, height: 1 },
-    { x: right, y: 0, width: 1 - right, height: 1 },
-    { x: 0, y: 0, width: 1, height: top },
-    { x: 0, y: bottom, width: 1, height: 1 - bottom },
-  ]
-    .filter((box) => box.width * box.height >= 0.25)
-    .sort((a, b) => b.width * b.height - a.width * a.height);
-  if (!strips.length) return null;
-  const tile = strips[0];
-  // A small overlap prevents a nearby book being cut exactly at the search edge.
-  const x = Math.max(0, tile.x - 0.04),
-    y = Math.max(0, tile.y - 0.04);
-  return {
-    x,
-    y,
-    width: Math.min(1, tile.x + tile.width + 0.04) - x,
-    height: Math.min(1, tile.y + tile.height + 0.04) - y,
-  };
+/** Overlapping zoomed passes recover small covers, including gaps in the middle.
+ * At most four extra inferences; unlike an uncovered-edge search this also works
+ * when the overview finds nothing. Keep the overview to retain large covers.
+ */
+export function chooseBookSearchTiles(
+  width: number,
+  height: number,
+): BookBounds[] {
+  if (!(width > 0 && height > 0)) return [];
+  if (width / height >= 1.3)
+    return [0, 0.25, 0.5].map((x) => ({ x, y: 0, width: 0.5, height: 1 }));
+  if (height / width >= 1.3)
+    return [0, 0.25, 0.5].map((y) => ({ x: 0, y, width: 1, height: 0.5 }));
+  return [0, 0.32].flatMap((y) =>
+    [0, 0.32].map((x) => ({ x, y, width: 0.68, height: 0.68 })),
+  );
+}
+
+/** Ignore fragments cut by an interior tile boundary. An overlapping pass or
+ * the overview sees the complete cover; the outside edges of the photo are OK.
+ */
+export function isCompleteTileDetection(box: BookBounds, tile: BookBounds) {
+  const margin = 0.015;
+  return !(
+    (tile.x > 0 && box.x < margin) ||
+    (tile.y > 0 && box.y < margin) ||
+    (tile.x + tile.width < 0.999 && box.x + box.width > 1 - margin) ||
+    (tile.y + tile.height < 0.999 && box.y + box.height > 1 - margin)
+  );
+}
+
+/** Favor complete overview boxes over nearly identical zoomed boxes. Do not
+ * collapse adjacent books or a genuinely small cover contained in a large box.
+ */
+export function mergeBookBounds(bounds: BookBounds[]): BookBounds[] {
+  const accepted: BookBounds[] = [];
+  for (const box of bounds) {
+    if (
+      accepted.some((other) => {
+        const overlap = intersectionArea(box, other);
+        const smaller = Math.min(
+          box.width * box.height,
+          other.width * other.height,
+        );
+        const larger = Math.max(
+          box.width * box.height,
+          other.width * other.height,
+        );
+        return (
+          intersectionOverUnion(box, other) > 0.5 ||
+          (overlap / smaller > 0.85 && smaller / larger > 0.55)
+        );
+      })
+    )
+      continue;
+    accepted.push(box);
+    if (accepted.length === MAX_BOOK_CROPS) break;
+  }
+  return accepted.sort((a, b) => a.y - b.y || a.x - b.x);
 }
 
 export function mapBookTileBounds(
@@ -54,7 +87,8 @@ export function filterBookBounds(
     const [x, y, w, h] = prediction.bbox;
     if (
       prediction.class !== 'book' ||
-      prediction.score < 0.45 ||
+      !Number.isFinite(prediction.score) ||
+      prediction.score < 0.4 ||
       ![x, y, w, h].every(Number.isFinite) ||
       w <= 0 ||
       h <= 0
@@ -84,10 +118,15 @@ export function filterBookBounds(
   return accepted.sort((a, b) => a.y - b.y || a.x - b.x);
 }
 
-function intersectionOverUnion(a: BookBounds, b: BookBounds) {
-  const overlap =
+function intersectionArea(a: BookBounds, b: BookBounds) {
+  return (
     Math.max(0, Math.min(a.x + a.width, b.x + b.width) - Math.max(a.x, b.x)) *
-    Math.max(0, Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y));
+    Math.max(0, Math.min(a.y + a.height, b.y + b.height) - Math.max(a.y, b.y))
+  );
+}
+
+function intersectionOverUnion(a: BookBounds, b: BookBounds) {
+  const overlap = intersectionArea(a, b);
   return overlap / (a.width * a.height + b.width * b.height - overlap);
 }
 
