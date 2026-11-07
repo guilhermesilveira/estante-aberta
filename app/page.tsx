@@ -1,7 +1,6 @@
 import { BookOpen, Camera, Check, Library, Send, Sparkles } from 'lucide-react';
 import Image from 'next/image';
 
-import { chatGPTSignInPath } from '@/app/chatgpt-auth';
 import { Badge } from '@/components/ui/badge';
 import { HardLink } from '@/components/hard-link';
 import { InstallAppButton } from '@/components/install-app';
@@ -30,7 +29,7 @@ const sampleBooks = [
 ];
 
 export default function Home() {
-  const myShelfPath = chatGPTSignInPath('/minha-estante');
+  const myShelfPath = '/minha-estante';
 
   return (
     <main className="min-h-dvh overflow-hidden bg-background text-foreground">
